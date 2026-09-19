@@ -1,0 +1,116 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+/// PM / Firstmate / other staff. RR pool is claimed on the user row.
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  slug      String   @unique
+  role      String
+  inRrPool  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Lead {
+  id                String    @id @default(cuid())
+  leadLogRowId      String?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  source            String
+  stage             String    @default("capture")
+  assignedPm        String?
+  name              String
+  phones            String    @default("[]")
+  email             String?
+  address           String?
+  zip               String?
+  channelPrefs      String    @default("[]")
+  nextActionAt      DateTime?
+  notesSummary      String?
+  insuranceClaim    Boolean   @default(false)
+  insuranceCarrier  String?
+  roofAge           String?
+  urgency           String?
+  result            String?
+  reasonCode        String?
+
+  activities    Activity[]
+  appointments  Appointment[]
+  opportunity   OpportunityLink?
+  assignments   AssignmentEvent[]
+}
+
+model Activity {
+  id         String   @id @default(cuid())
+  leadId     String
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  type       String
+  direction  String?
+  actor      String
+  actorName  String
+  outcome    String?
+  body       String?
+  summary    String?
+  occurredAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+}
+
+model Appointment {
+  id              String    @id @default(cuid())
+  leadId          String
+  lead            Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  startsAt        DateTime
+  endsAt          DateTime?
+  assignee        String
+  roofrCalendarId String?
+  status          String    @default("set")
+  notes           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
+
+model OpportunityLink {
+  id            String   @id @default(cuid())
+  leadId        String   @unique
+  lead          Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  roofrId       String?
+  mrsJobId      String?
+  companycamRef String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model AssignmentEvent {
+  id         String   @id @default(cuid())
+  leadId     String
+  lead       Lead     @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  fromPm     String?
+  toPm       String
+  reason     String
+  actor      String
+  occurredAt DateTime @default(now())
+}
+
+model RoundRobinCursor {
+  id        String   @id @default("default")
+  lastIndex Int      @default(-1)
+  updatedAt DateTime @updatedAt
+}
+
+/// Inbound webhook inbox. Phase 1 stores payload only — no side effects.
+model WebhookEvent {
+  id         String   @id @default(cuid())
+  source     String
+  payload    String
+  headers    String?
+  receivedAt DateTime @default(now())
+  note       String   @default("stored_only")
+}

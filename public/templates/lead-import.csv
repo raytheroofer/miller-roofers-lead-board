@@ -1,0 +1,3 @@
+name,phone,email,address,zip,source,notes,insurance_claim,insurance_carrier,roof_age,urgency,lead_log_row_id
+James Whitaker,904-555-0142,james.whitaker@example.com,"4821 Colonial Ave, Jacksonville FL",32210,zeus-wind,Wind claim after tropical system,true,State Farm,18,storm,LOG-1042
+Maria Delgado,904-555-0198,maria.delgado@example.com,"918 San Marco Blvd, Jacksonville FL",32207,lsa,LSA form — qualify for First Coast fit,true,Citizens,22,normal,LOG-1048

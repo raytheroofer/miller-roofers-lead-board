@@ -1,0 +1,62 @@
+@import "tailwindcss";
+
+:root {
+  --paper: #f3eee4;
+  --ink: #1c1914;
+  --muted: #5c564c;
+  --line: #d8cfc0;
+  --card: #fffdf8;
+  --navy: #1a2332;
+  --navy-2: #243044;
+  --copper: #b4532a;
+  --copper-soft: #f3ddd2;
+  --ok: #2f6b4f;
+  --warn: #9a6b12;
+  --lost: #6b6258;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-card: var(--card);
+  --color-navy: var(--navy);
+  --color-navy-2: var(--navy-2);
+  --color-copper: var(--copper);
+  --color-copper-soft: var(--copper-soft);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-lost: var(--lost);
+  --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  background: var(--paper);
+  color: var(--ink);
+}
+
+body {
+  font-family: var(--font-sans), "Segoe UI", sans-serif;
+}
+
+a {
+  color: inherit;
+}
+
+input,
+select,
+textarea,
+button {
+  font: inherit;
+}
+
+::selection {
+  background: #f0c9b4;
+}
