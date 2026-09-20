@@ -73,6 +73,9 @@ export function canTransition(
   }
 
   // won → lost_nurture is already allowed by the `to === lost_nurture` branch.
+  if (from === "won") {
+    return false;
+  }
 
   if (!isPipelineStage(from) || !isPipelineStage(to)) return false;
 
