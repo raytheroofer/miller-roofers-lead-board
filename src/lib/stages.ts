@@ -72,7 +72,8 @@ export function canTransition(
     return to !== "won";
   }
 
-  // won → lost_nurture is already allowed by the `to === lost_nurture` branch.
+  // won is terminal except lost_nurture (job fell through)
+  if (from === "won") return false;
 
   if (!isPipelineStage(from) || !isPipelineStage(to)) return false;
 
