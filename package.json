@@ -5,15 +5,16 @@
   "description": "MRS Leaderboard \u2014 Phase 1 track-only lead board for Mrs Roofers / Miller Roofing Solutions",
   "scripts": {
     "dev": "next dev --port 43177",
-    "build": "prisma generate && next build",
+    "build": "prisma generate && prisma migrate deploy && next build",
     "start": "next start --port 43177",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
     "db:generate": "prisma generate",
     "db:push": "prisma db push",
+    "db:migrate": "prisma migrate deploy",
     "db:seed": "tsx prisma/seed.ts",
-    "db:reset": "prisma db push --force-reset && tsx prisma/seed.ts"
+    "db:reset": "prisma migrate reset --force && tsx prisma/seed.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

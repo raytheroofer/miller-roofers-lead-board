@@ -30,7 +30,7 @@ Phase 1 **tracks** leads. It does **not** dial, send SMS, create Roofr opportuni
 cp .env.example .env
 npm install
 npx prisma generate
-npx prisma db push
+npx prisma migrate deploy
 npm run db:seed
 npm run dev
 ```
@@ -54,7 +54,7 @@ Copy `.env.example`. Nothing in that file is a production secret.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | SQLite path. Default `file:./prisma/dev.db` |
+| `DATABASE_URL` | Yes | PostgreSQL connection string (Neon, Vercel Postgres, Supabase). Format: `postgresql://user:password@host/db?sslmode=require` |
 | `AUTH_SECRET` | Yes at runtime | Auth.js session signing. Generate a long random string for any shared deploy. |
 | `AUTH_PASSWORD` | Yes for password login | Shared password for allowlisted PM emails |
 | `ALLOWED_EMAILS` | No | Defaults to `ray@mrsroofers.com,austin@mrsroofers.com,cody@mrsroofers.com` |
@@ -93,13 +93,18 @@ Live Twilio send (`POST /api/twilio/sms`) and Roofr opportunity create (`POST /a
 
 ## Deploy on Vercel
 
-1. Import the repo in Vercel (Next.js is auto-detected; `vercel.json` sets `prisma generate && next build`).
-2. Add the env vars from `.env.example`. Set a real `AUTH_SECRET`. Keep both feature flags `false`.
-3. SQLite on Vercel serverless **does not persist**. This Phase 1 build is meant for local use and short-lived previews. For a durable hosted preview, point `DATABASE_URL` at a hosted SQLite (Turso) or Postgres later — still no Twilio/Roofr writes.
+1. Import the repo in Vercel (Next.js is auto-detected; `vercel.json` runs `prisma generate && prisma migrate deploy && next build`).
+2. Add the env vars from `.env.example`.
+   - Set a pooled/direct PostgreSQL `DATABASE_URL` (e.g. Neon, Vercel Postgres, Supabase).
+   - Set a real `AUTH_SECRET` (generate a 32+ character random string).
+   - Set `AUTH_PASSWORD` (e.g. `track-only` or your chosen password for PM logins).
+   - Keep both feature flags `false` (`FEATURE_TWILIO_LIVE=false`, `FEATURE_ROOFR_WRITE=false`).
+3. Seed staff & initial lead data:
+   - Run `DATABASE_URL="..." npm run db:seed` locally against the hosted database once.
 4. Do not put live Twilio or Roofr write credentials in the project. They are not required to build.
 
 ```bash
-npm run build   # does not need Google, Twilio, or Roofr secrets
+npm run build   # runs prisma generate && prisma migrate deploy && next build
 ```
 
 ## Phase 2 gates (not this build)
@@ -114,7 +119,7 @@ Do not turn these on until Ray says yes:
 
 ## Data model
 
-Prisma / SQLite: `Lead`, `Activity`, `Appointment`, `OpportunityLink`, `AssignmentEvent`, `User`, plus `RoundRobinCursor` and `WebhookEvent`.
+Prisma / PostgreSQL: `Lead`, `Activity`, `Appointment`, `OpportunityLink`, `AssignmentEvent`, `User`, plus `RoundRobinCursor` and `WebhookEvent`.
 
 Stages (exact): `capture` · `qualify` · `assign` · `contact` · `appointment_set` · `inspection` · `proposal` · `negotiate` · `won` · `lost_nurture`
 
