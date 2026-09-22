@@ -12,7 +12,11 @@ export function LoginForm({
 }) {
   return (
     <form action={loginAction} method="post" className="space-y-3">
-      {error ? (
+      {error === "Configuration" ? (
+        <p className="rounded-md bg-copper-soft px-3 py-2 text-sm text-copper" role="alert">
+          Server configuration issue. Ensure AUTH_SECRET and AUTH_PASSWORD are set in Vercel environment variables.
+        </p>
+      ) : error ? (
         <p className="rounded-md bg-copper-soft px-3 py-2 text-sm text-copper" role="alert">
           Sign-in failed. Use an allowlisted email and the env password.
         </p>

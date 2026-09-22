@@ -18,6 +18,20 @@ function isPublic(pathname: string): boolean {
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  // Block any attempts to download credentials.json, .env, or other sensitive files
+  if (
+    pathname === "/credentials.json" ||
+    pathname.endsWith("/credentials.json") ||
+    pathname.includes("credentials.json") ||
+    pathname.startsWith("/.env")
+  ) {
+    return new NextResponse("Not Found", {
+      status: 404,
+      headers: { "Content-Type": "text/plain" },
+    });
+  }
+
   if (isPublic(pathname)) {
     return NextResponse.next();
   }

@@ -35,11 +35,33 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(left, right);
 }
 
-function passwordForEmail(email: string): string | undefined {
+export function passwordForEmail(email: string): string | undefined {
+  const defaultPw = process.env.NODE_ENV !== "production" ? "track-only" : undefined;
+  const sharedPassword = process.env.AUTH_PASSWORD || defaultPw;
   if (email === firstmateEmail()) {
-    return process.env.FIRSTMATE_PASSWORD || process.env.AUTH_PASSWORD;
+    return process.env.FIRSTMATE_PASSWORD || sharedPassword;
   }
-  return process.env.AUTH_PASSWORD;
+  return sharedPassword;
+}
+
+export async function authorizeUser(credentials?: Record<string, unknown>) {
+  const email = String(credentials?.email ?? "")
+    .trim()
+    .toLowerCase();
+  const password = String(credentials?.password ?? "");
+  if (!email || !password) return null;
+  if (!isAllowlistedEmail(email)) return null;
+  const expected = passwordForEmail(email);
+  if (!expected || !safeEqual(password, expected)) return null;
+  const staff = staffFromEmail(email);
+  return {
+    id: staff.slug,
+    email: staff.email,
+    name: staff.name,
+    role: staff.role,
+    slug: staff.slug,
+    inRrPool: staff.inRrPool,
+  };
 }
 
 const providers = [
@@ -50,25 +72,7 @@ const providers = [
       email: { label: "Email", type: "email" },
       password: { label: "Password", type: "password" },
     },
-    async authorize(credentials) {
-      const email = String(credentials?.email ?? "")
-        .trim()
-        .toLowerCase();
-      const password = String(credentials?.password ?? "");
-      if (!email || !password) return null;
-      if (!isAllowlistedEmail(email)) return null;
-      const expected = passwordForEmail(email);
-      if (!expected || !safeEqual(password, expected)) return null;
-      const staff = staffFromEmail(email);
-      return {
-        id: staff.slug,
-        email: staff.email,
-        name: staff.name,
-        role: staff.role,
-        slug: staff.slug,
-        inRrPool: staff.inRrPool,
-      };
-    },
+    authorize: authorizeUser,
   }),
 ];
 
@@ -85,7 +89,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
-  pages: { signIn: "/login" },
+  pages: {
+    signIn: "/login",
+    error: "/login",
+  },
   providers,
   callbacks: {
     async signIn({ user, account }) {
