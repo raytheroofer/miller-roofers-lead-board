@@ -26,6 +26,8 @@ Phase 1 **tracks** leads. It does **not** dial, send SMS, create Roofr opportuni
 
 ## Run locally
 
+Ensure a PostgreSQL instance is running and the target database exists (e.g. `createdb mrs_leaderboard` or via Docker / hosted instance).
+
 ```bash
 cp .env.example .env
 npm install
@@ -54,7 +56,8 @@ Copy `.env.example`. Nothing in that file is a production secret.
 
 | Variable | Required | Purpose |
 | --- | --- | --- |
-| `DATABASE_URL` | Yes | PostgreSQL connection string (Neon, Vercel Postgres, Supabase). Format: `postgresql://user:password@host/db?sslmode=require` |
+| `DATABASE_URL` | Yes | PostgreSQL connection string (Neon, Vercel Postgres, Supabase). If using a pooler (PgBouncer/Neon pooled), set this to the pooled connection string. Format: `postgresql://user:password@host/db?sslmode=require` |
+| `DIRECT_URL` | Yes (for pooled DB) | Direct unpooled PostgreSQL connection string for Prisma migrations (`prisma migrate deploy`). If using a direct non-pooled connection, set `DIRECT_URL` to the same value as `DATABASE_URL`. |
 | `AUTH_SECRET` | Yes at runtime | Auth.js session signing. Generate a long random string for any shared deploy. |
 | `AUTH_PASSWORD` | Yes for password login | Shared password for allowlisted PM emails |
 | `ALLOWED_EMAILS` | No | Defaults to `ray@mrsroofers.com,austin@mrsroofers.com,cody@mrsroofers.com` |
@@ -94,13 +97,15 @@ Live Twilio send (`POST /api/twilio/sms`) and Roofr opportunity create (`POST /a
 ## Deploy on Vercel
 
 1. Import the repo in Vercel (Next.js is auto-detected; `vercel.json` runs `prisma generate && prisma migrate deploy && next build`).
-2. Add the env vars from `.env.example`.
-   - Set a pooled/direct PostgreSQL `DATABASE_URL` (e.g. Neon, Vercel Postgres, Supabase).
-   - Set a real `AUTH_SECRET` (generate a 32+ character random string).
-   - Set `AUTH_PASSWORD` (e.g. `track-only` or your chosen password for PM logins).
+2. Add the env vars from `.env.example`:
+   - `DATABASE_URL`: Pooled connection string from Neon, Vercel Postgres, or Supabase.
+   - `DIRECT_URL`: Direct unpooled connection string (required by Prisma Migrate because migrations cannot run through PgBouncer/Neon transaction pooler). If using a non-pooled database, set `DIRECT_URL` to the same value as `DATABASE_URL`.
+   - `AUTH_SECRET`: Generate a 32+ character random string for NextAuth.
+   - `AUTH_PASSWORD`: Shared password for allowlisted PM logins (default `track-only`).
    - Keep both feature flags `false` (`FEATURE_TWILIO_LIVE=false`, `FEATURE_ROOFR_WRITE=false`).
 3. Seed staff & initial lead data:
-   - Run `DATABASE_URL="..." npm run db:seed` locally against the hosted database once.
+   - For a fresh database, run `DATABASE_URL="..." DIRECT_URL="..." npm run db:seed` locally once.
+   - If initializing only the required staff directory and round-robin cursor without creating sample demo leads, run `DATABASE_URL="..." DIRECT_URL="..." npm run db:bootstrap`.
 4. Do not put live Twilio or Roofr write credentials in the project. They are not required to build.
 
 ```bash
