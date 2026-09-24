@@ -1,8 +1,9 @@
 import NextAuth, { type DefaultSession } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
-import { timingSafeEqual } from "crypto";
+import { prisma } from "@/lib/prisma";
 import { firstmateEmail, isAllowlistedEmail, staffFromEmail } from "@/lib/users";
+import { safeEqual, verifyPassword } from "@/lib/auth-service";
 
 declare module "next-auth" {
   interface Session {
@@ -28,20 +29,6 @@ declare module "@auth/core/jwt" {
   }
 }
 
-function safeEqual(a: string, b: string): boolean {
-  const left = Buffer.from(a);
-  const right = Buffer.from(b);
-  if (left.length !== right.length) return false;
-  return timingSafeEqual(left, right);
-}
-
-function passwordForEmail(email: string): string | undefined {
-  if (email === firstmateEmail()) {
-    return process.env.FIRSTMATE_PASSWORD || process.env.AUTH_PASSWORD;
-  }
-  return process.env.AUTH_PASSWORD;
-}
-
 const providers = [
   Credentials({
     id: "credentials",
@@ -57,16 +44,27 @@ const providers = [
       const password = String(credentials?.password ?? "");
       if (!email || !password) return null;
       if (!isAllowlistedEmail(email)) return null;
-      const expected = passwordForEmail(email);
-      if (!expected || !safeEqual(password, expected)) return null;
+
+      const user = await prisma.user.findUnique({ where: { email } });
+
+      let authenticated = false;
+      if (user?.passwordHash) {
+        authenticated = await verifyPassword(password, user.passwordHash);
+      } else if (email === firstmateEmail() && process.env.FIRSTMATE_PASSWORD) {
+        // Optional ops bot env login fallback for automated firstmate tasks
+        authenticated = safeEqual(password, process.env.FIRSTMATE_PASSWORD);
+      }
+
+      if (!authenticated) return null;
+
       const staff = staffFromEmail(email);
       return {
-        id: staff.slug,
-        email: staff.email,
-        name: staff.name,
-        role: staff.role,
-        slug: staff.slug,
-        inRrPool: staff.inRrPool,
+        id: user?.id ?? staff.slug,
+        email: user?.email ?? staff.email,
+        name: user?.name ?? staff.name,
+        role: user?.role ?? staff.role,
+        slug: user?.slug ?? staff.slug,
+        inRrPool: user?.inRrPool ?? staff.inRrPool,
       };
     },
   }),
