@@ -9,14 +9,18 @@ datasource db {
 
 /// PM / Firstmate / other staff. RR pool is claimed on the user row.
 model User {
-  id        String   @id @default(cuid())
-  email     String   @unique
-  name      String
-  slug      String   @unique
-  role      String
-  inRrPool  Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id              String    @id @default(cuid())
+  email           String    @unique
+  name            String
+  slug            String    @unique
+  role            String
+  inRrPool        Boolean   @default(false)
+  passwordHash    String?
+  inviteTokenHash String?   @unique
+  inviteExpiresAt DateTime?
+  passwordSetAt   DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 }
 
 model Lead {

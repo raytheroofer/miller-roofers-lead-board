@@ -4,17 +4,24 @@ import { Button, Field, Label } from "@/components/ui";
 export function LoginForm({
   callbackUrl,
   error,
+  message,
   defaultEmail,
 }: {
   callbackUrl: string;
   error?: string;
+  message?: string;
   defaultEmail: string;
 }) {
   return (
     <form action={loginAction} method="post" className="space-y-3">
+      {message === "password_set" ? (
+        <p className="rounded-md bg-emerald-50 border border-emerald-200 px-3 py-2 text-sm text-emerald-800" role="status">
+          Password set successfully. Please sign in with your email and new password.
+        </p>
+      ) : null}
       {error ? (
         <p className="rounded-md bg-copper-soft px-3 py-2 text-sm text-copper" role="alert">
-          Sign-in failed. Use an allowlisted email and the env password.
+          Sign-in failed. Please check your email and password. Ensure you have activated your account via invite link.
         </p>
       ) : null}
       <input type="hidden" name="redirectTo" value={callbackUrl || "/"} />
@@ -37,7 +44,7 @@ export function LoginForm({
           name="password"
           type="password"
           autoComplete="current-password"
-          placeholder="track-only"
+          placeholder="Enter your password"
           required
         />
       </div>

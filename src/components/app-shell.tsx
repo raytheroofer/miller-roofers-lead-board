@@ -7,6 +7,7 @@ const NAV = [
   { href: "/leads/new", label: "New lead" },
   { href: "/import", label: "CSV import" },
   { href: "/calendar", label: "Calendar" },
+  { href: "/admin/team", label: "Team & Invites" },
   { href: "/admin/webhooks", label: "Webhooks" },
 ];
 

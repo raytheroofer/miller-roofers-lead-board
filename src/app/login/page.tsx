@@ -1,15 +1,17 @@
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { auth, signIn } from "@/auth";
 import { Button } from "@/components/ui";
 import { LoginForm } from "@/components/login-form";
 import { DEFAULT_ALLOWED_EMAILS } from "@/lib/users";
+import { canCreateBootstrapInvite } from "@/lib/auth-service";
 
 export const dynamic = "force-dynamic";
 
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ callbackUrl?: string; error?: string }>;
+  searchParams: Promise<{ callbackUrl?: string; error?: string; message?: string; email?: string }>;
 }) {
   const session = await auth();
   const params = await searchParams;
@@ -19,6 +21,7 @@ export default async function LoginPage({
 
   const googleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
   const firstmate = process.env.FIRSTMATE_EMAIL ?? "firstmate@mrsroofers.com";
+  const isBootstrapAvailable = await canCreateBootstrapInvite();
 
   return (
     <div className="flex min-h-full items-center justify-center px-4 py-12">
@@ -34,7 +37,8 @@ export default async function LoginPage({
           <LoginForm
             callbackUrl={params.callbackUrl || "/"}
             error={params.error}
-            defaultEmail="ray@mrsroofers.com"
+            message={params.message}
+            defaultEmail={params.email || "ray@mrsroofers.com"}
           />
 
           {googleEnabled ? (
@@ -52,12 +56,18 @@ export default async function LoginPage({
           ) : null}
         </div>
 
-        <div className="mt-6 text-xs leading-relaxed text-muted">
+        <div className="mt-6 space-y-2 text-xs leading-relaxed text-muted">
           <p>Allowlist: {DEFAULT_ALLOWED_EMAILS.join(", ")}, plus {firstmate}.</p>
-          <p className="mt-2">
-            Local default password is in <code>.env.example</code> as <code>AUTH_PASSWORD</code> (
-            <code>track-only</code>). Firstmate uses <code>FIRSTMATE_PASSWORD</code> when set.
+          <p>
+            Each staff member signs in with their individual password set via invite link.
           </p>
+          {isBootstrapAvailable ? (
+            <p className="pt-2">
+              <Link href="/bootstrap" className="text-copper underline hover:text-ink">
+                Initial setup? Run owner bootstrap
+              </Link>
+            </p>
+          ) : null}
         </div>
       </div>
     </div>
