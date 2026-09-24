@@ -295,6 +295,25 @@ async function main() {
     },
   });
 
+  if (process.env.NODE_ENV !== "production") {
+    const rayUser = await prisma.user.findUnique({ where: { email: "ray@mrsroofers.com" } });
+    if (rayUser) {
+      const crypto = await import("crypto");
+      const token = crypto.randomBytes(32).toString("hex");
+      const tokenHash = crypto.createHash("sha256").update(token).digest("hex");
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      await prisma.user.update({
+        where: { id: rayUser.id },
+        data: {
+          inviteTokenHash: tokenHash,
+          inviteExpiresAt: expiresAt,
+        },
+      });
+      console.log("\n[Bootstrap] Owner invite link generated for ray@mrsroofers.com (non-production seed):");
+      console.log(`  http://localhost:43177/invite/${token}\n`);
+    }
+  }
+
   console.log("Seeded 10 Jacksonville leads, staff directory, and webhook sample.");
 }
 
