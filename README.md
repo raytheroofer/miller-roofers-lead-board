@@ -1,5 +1,7 @@
 # MRS Leaderboard (Phase 1 — track only)
 
+Company lanes (what this app is, and what it is not) live in [docs/OPERATING-SYSTEM.md](docs/OPERATING-SYSTEM.md). Follow that doc before adding a hub, a job-number system, or a live integration.
+
 Lead funnel web tracker for **Miller Roofing Solutions LLC / Mrs Roofers**, Jacksonville FL insurance-restoration roofing.
 
 Phase 1 **tracks** leads. It does **not** dial, send SMS, create Roofr opportunities, or write the Roofr calendar.
