@@ -1,5 +1,7 @@
 # MRS Lead Funnel + Cursor Web Tracker — Structure v2
 
+Company operating system: [OPERATING-SYSTEM.md](OPERATING-SYSTEM.md). This file is the Phase 1 punch list for the lead board only. It does not replace Roofr, Drive, QuickBooks, or the cap-out.
+
 Copied from the 2026-09-18 locked spec. Phase 1 of this repo implements section 4 (track only).
 
 | Field | Value |
