@@ -1,20 +1,21 @@
 import { InputError } from "@/lib/input-error";
 /**
- * Round-robin pool is locked: Raymond → Austin Maddox → Cody Boyd.
+ * Current routing: Raymond → Cody Boyd. Historical assignments are retained.
  * Chris Bell is explicitly OUT of routing.
  */
-export const RR_POOL = ["raymond", "austin", "cody"] as const;
+export const RR_POOL = ["raymond", "cody"] as const;
+// A separate cursor avoids interpreting the previous three-person index as a two-person index.
+export const RR_CURSOR_ID = "raymond-cody-v1";
 
 export type RrPm = (typeof RR_POOL)[number];
 
 export const RR_POOL_LABELS: Record<RrPm, string> = {
   raymond: "Raymond",
-  austin: "Austin Maddox",
   cody: "Cody Boyd",
 };
 
 /** People who exist in the company but must never be auto-routed. */
-export const RR_EXCLUDED = ["chris", "chris_bell", "chris-bell"] as const;
+export const RR_EXCLUDED = ["austin", "chris", "chris_bell", "chris-bell"] as const;
 
 export function isRrPm(value: string | null | undefined): value is RrPm {
   return !!value && (RR_POOL as readonly string[]).includes(value);
@@ -48,15 +49,17 @@ export function previewRoundRobinOrder(startIndex = -1, count = RR_POOL.length *
 
 export function assertAssignablePm(slug: string): asserts slug is RrPm {
   if (RR_EXCLUDED.includes(slug as (typeof RR_EXCLUDED)[number])) {
-    throw new InputError("Chris Bell is out of the routing pool");
+    throw new InputError(`${pmLabel(slug)} is out of the routing pool`);
   }
   if (!isRrPm(slug)) {
-    throw new InputError(`PM "${slug}" is not in the round-robin pool (Raymond → Austin → Cody)`);
+    throw new InputError(`PM "${slug}" is not in the round-robin pool (Raymond → Cody)`);
   }
 }
 
 export function pmLabel(slug: string | null | undefined): string {
   if (!slug) return "Unassigned";
+  if (slug === "austin") return "Austin Maddox (inactive)";
+  if (RR_EXCLUDED.includes(slug as (typeof RR_EXCLUDED)[number])) return "Chris Bell";
   if (isRrPm(slug)) return RR_POOL_LABELS[slug];
   return slug;
 }

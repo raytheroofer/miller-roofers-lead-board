@@ -15,7 +15,7 @@ import {
 } from "@/components/lead-forms";
 import { Card } from "@/components/ui";
 import { formatDateTime, parseJsonArray } from "@/lib/utils";
-import { pmLabel } from "@/lib/rr";
+import { isRrPm, pmLabel } from "@/lib/rr";
 import { sourceLabel } from "@/lib/sources";
 import { canOverrideStages } from "@/lib/users";
 import { NextActionForm } from "@/components/next-action-form";
@@ -70,7 +70,7 @@ export default async function LeadDetailPage({
       <div className="mb-6 flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="font-serif text-3xl">{lead.name}</h1>
+            <h1 className="font-semibold tracking-tight text-3xl">{lead.name}</h1>
             <StageBadge stage={lead.stage} />
           </div>
           <p className="mt-2 text-sm text-muted">
@@ -86,6 +86,7 @@ export default async function LeadDetailPage({
 
       <Card className="mb-5 p-4">
         {isDemoLead(lead) && <p className="mb-3 text-sm text-copper">Demo / test record. Excluded from the Today work queue.</p>}
+        {lead.assignedPm && !isRrPm(lead.assignedPm) && <p className="mb-3 rounded-md bg-amber-50 p-3 text-sm text-amber-900">This record has an inactive owner. Choose Raymond or Cody Boyd and record the reason when reassigning. Past activity is preserved.</p>}
         <StageForm
           leadId={lead.id}
           stage={lead.stage}
@@ -96,13 +97,13 @@ export default async function LeadDetailPage({
       <div className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
         <div className="space-y-5">
           <Card className="p-4">
-            <h2 className="mb-3 font-serif text-xl">Next action</h2>
+            <h2 className="mb-3 font-semibold tracking-tight text-xl">Next action</h2>
             <NextActionForm key={lead.updatedAt.toISOString()} version={lead.updatedAt.toISOString()} leadId={lead.id}
               summary={lead.nextActionAt ? lead.activities.find(a => a.type === "next_action")?.summary ?? "" : ""}
               due={easternInput(lead.nextActionAt)} dueIso={lead.nextActionAt?.toISOString() ?? ""} assignedPm={lead.assignedPm} />
           </Card>
           <Card className="p-4">
-            <h2 className="font-serif text-xl">Activity timeline</h2>
+            <h2 className="font-semibold tracking-tight text-xl">Activity timeline</h2>
             {lead.activities.length === 0 ? (
               <p className="mt-4 text-sm text-muted">No touches yet. Log the first call or SMS.</p>
             ) : (
@@ -125,13 +126,13 @@ export default async function LeadDetailPage({
 
           <div className="grid gap-5 md:grid-cols-2">
             <Card className="p-4">
-              <h2 className="font-serif text-xl">Log call</h2>
+              <h2 className="font-semibold tracking-tight text-xl">Log call</h2>
               <div className="mt-3">
                 <LogCallForm leadId={lead.id} />
               </div>
             </Card>
             <Card className="p-4">
-              <h2 className="font-serif text-xl">Log SMS</h2>
+              <h2 className="font-semibold tracking-tight text-xl">Log SMS</h2>
               <div className="mt-3">
                 <LogSmsForm leadId={lead.id} />
               </div>
@@ -139,7 +140,7 @@ export default async function LeadDetailPage({
           </div>
 
           <Card className="p-4">
-            <h2 className="font-serif text-xl">Lead details</h2>
+            <h2 className="font-semibold tracking-tight text-xl">Lead details</h2>
             <div className="mt-3">
               <LeadDetailsForm lead={lead} />
             </div>
@@ -148,7 +149,7 @@ export default async function LeadDetailPage({
 
         <div className="space-y-5">
           <Card className="p-4">
-            <h2 className="font-serif text-xl">Round-robin</h2>
+            <h2 className="font-semibold tracking-tight text-xl">Round-robin</h2>
             <p className="mt-1 text-sm text-muted">Current: {pmLabel(lead.assignedPm)}</p>
             <div className="mt-3">
               <AssignPanel leadId={lead.id} assignedPm={lead.assignedPm} source={lead.source} />
@@ -156,13 +157,13 @@ export default async function LeadDetailPage({
           </Card>
 
           <Card className="p-4">
-            <h2 className="font-serif text-xl">Assignment audit</h2>
+            <h2 className="font-semibold tracking-tight text-xl">Assignment audit</h2>
             {lead.assignments.length === 0 ? (
               <p className="mt-3 text-sm text-muted">No assignment events yet.</p>
             ) : (
               <ul className="mt-3 space-y-2 text-sm">
                 {lead.assignments.map((event) => (
-                  <li key={event.id} className="rounded-md bg-[#f7f1e7] px-3 py-2">
+                  <li key={event.id} className="rounded-md bg-paper px-3 py-2">
                     <p>
                       {pmLabel(event.fromPm)} → {pmLabel(event.toPm)}
                     </p>
@@ -176,7 +177,7 @@ export default async function LeadDetailPage({
           </Card>
 
           <Card className="p-4">
-            <h2 className="font-serif text-xl">Set appointment</h2>
+            <h2 className="font-semibold tracking-tight text-xl">Set appointment</h2>
             <div className="mt-3">
               <SetAppointmentForm leadId={lead.id} defaultAssignee={lead.assignedPm} />
             </div>
@@ -197,7 +198,7 @@ export default async function LeadDetailPage({
           </Card>
 
           <Card className="p-4">
-            <h2 className="font-serif text-xl">Roofr / job links</h2>
+            <h2 className="font-semibold tracking-tight text-xl">Roofr / job links</h2>
             {(roofrUrl || companycamUrl) && (
               <div className="mt-3 flex flex-wrap gap-4 text-sm">
                 {roofrUrl && <a href={roofrUrl} target="_blank" rel="noopener noreferrer" className="underline">Open saved Roofr job ↗</a>}

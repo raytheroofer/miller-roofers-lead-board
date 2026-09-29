@@ -11,6 +11,7 @@ export const dynamic = "force-dynamic";
 export default async function WebhookInboxPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
+  if (!["owner", "firstmate"].includes(session.user.role)) redirect("/today");
 
   const events = await prisma.webhookEvent.findMany({
     orderBy: { receivedAt: "desc" },
@@ -23,14 +24,14 @@ export default async function WebhookInboxPage() {
       userEmail={session.user.email ?? ""}
       pathname="/admin/webhooks"
     >
-      <h1 className="font-serif text-3xl">Webhook inbox</h1>
+      <h1 className="font-semibold tracking-tight text-3xl">Webhook inbox</h1>
       <p className="mt-1 max-w-2xl text-sm text-muted">
         {process.env.FEATURE_WEBHOOK_INBOX === "true" && process.env.WEBHOOK_SECRET ? "Inbox enabled, store only." : "Inbound storage is disabled during recovery."} Historical payloads remain available. No automatic lead creation or outreach.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2 text-xs">
         {WEBHOOK_SOURCES.map((source) => (
-          <code key={source} className="rounded-md bg-[#efe8da] px-2 py-1">
+          <code key={source} className="rounded-md bg-paper px-2 py-1">
             POST /api/webhooks/{source}
           </code>
         ))}

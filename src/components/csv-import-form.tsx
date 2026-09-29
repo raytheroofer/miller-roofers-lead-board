@@ -47,7 +47,7 @@ export function CsvImportForm() {
       </div>
       {result ? <p className="text-sm text-ok">{result}</p> : null}
       {error ? <p className="text-sm text-copper">{error}</p> : null}
-      <div className="rounded-md bg-[#f7f1e7] p-3 text-xs text-muted">
+      <div className="rounded-md bg-paper p-3 text-xs text-muted">
         Columns: name, phone, email, address, zip, source, notes, insurance_claim, insurance_carrier, roof_age,
         urgency, lead_log_row_id. Sources must match the locked enum (zeus-wind, lsa, website, …).
       </div>

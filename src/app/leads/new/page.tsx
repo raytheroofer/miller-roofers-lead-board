@@ -18,7 +18,7 @@ export default async function NewLeadPage() {
       userEmail={session.user.email ?? ""}
       pathname="/leads/new"
     >
-      <h1 className="font-serif text-3xl">Capture a lead</h1>
+      <h1 className="font-semibold tracking-tight text-3xl">Capture a lead</h1>
       <p className="mt-1 max-w-2xl text-sm text-muted">
         Verify the lead in its original source, then capture it here. Create or find the opportunity in Roofr the same day
         and link its job number. Intake is manual; automatic import is paused during recovery.

@@ -26,7 +26,7 @@ export function LoginForm({
           type="email"
           autoComplete="username"
           defaultValue={defaultEmail}
-          placeholder="ray@mrsroofers.com"
+          placeholder="you@mrsroofers.com"
           required
         />
       </div>

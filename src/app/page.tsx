@@ -22,7 +22,7 @@ export default async function BoardPage({
   const params = await searchParams;
   const view = params.view === "table" ? "table" : "board";
   const stage = params.stage && isStage(params.stage) ? params.stage : undefined;
-  const pm = params.pm === "unassigned" || (params.pm && isRrPm(params.pm)) ? params.pm : undefined;
+  const pm = params.pm === "austin" || params.pm === "unassigned" || (params.pm && isRrPm(params.pm)) ? params.pm : undefined;
   const source = params.source && isLeadSource(params.source) ? params.source : undefined;
   const search = typeof params.q === "string" ? params.q.trim().slice(0, 200) : "";
 
@@ -62,7 +62,8 @@ export default async function BoardPage({
     >
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <h1 className="font-serif text-3xl">Lead board</h1>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-bronze">Miller Roofing Solutions</p>
+          <h1 className="font-semibold tracking-tight text-3xl text-navy">Lead board</h1>
           <p className="mt-1 text-sm text-muted">
             {leads.length} {showDemo ? "demo / test records" : "working leads"} · Manual updates · Round-robin: Remodel Favor only
           </p>
@@ -91,7 +92,7 @@ export default async function BoardPage({
             placeholder="Name, phone, email, address or Roofr job number"
             className="mt-1 w-full rounded-md border border-line px-3 py-2 text-sm" />
         </label>
-        <select name="stage" defaultValue={stage ?? ""} className="rounded-md border border-line px-3 py-2 text-sm">
+        <select aria-label="Filter by stage" name="stage" defaultValue={stage ?? ""} className="rounded-md border border-line px-3 py-2 text-sm">
           <option value="">All stages</option>
           {STAGES.map((value) => (
             <option key={value} value={value}>
@@ -99,16 +100,17 @@ export default async function BoardPage({
             </option>
           ))}
         </select>
-        <select name="pm" defaultValue={pm ?? ""} className="rounded-md border border-line px-3 py-2 text-sm">
+        <select aria-label="Filter by project manager" name="pm" defaultValue={pm ?? ""} className="rounded-md border border-line px-3 py-2 text-sm">
           <option value="">All PMs</option>
           <option value="unassigned">Unassigned</option>
+          <option value="austin">Austin Maddox — past assignments</option>
           {RR_POOL.map((value) => (
             <option key={value} value={value}>
               {RR_POOL_LABELS[value]}
             </option>
           ))}
         </select>
-        <select name="source" defaultValue={source ?? ""} className="rounded-md border border-line px-3 py-2 text-sm">
+        <select aria-label="Filter by source" name="source" defaultValue={source ?? ""} className="rounded-md border border-line px-3 py-2 text-sm">
           <option value="">All sources</option>
           {LEAD_SOURCES.map((value) => (
             <option key={value} value={value}>

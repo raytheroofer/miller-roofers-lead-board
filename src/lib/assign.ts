@@ -1,5 +1,5 @@
 import { InputError } from "@/lib/input-error";
-import { assertAssignablePm, nextRoundRobin, type RrPm } from "@/lib/rr";
+import { assertAssignablePm, nextRoundRobin, RR_CURSOR_ID, type RrPm } from "@/lib/rr";
 import { canTransition } from "@/lib/stages";
 import { serialTransaction } from "@/lib/transaction";
 
@@ -16,9 +16,9 @@ export async function assignRoundRobin(options: {
   if (lead.assignedPm) return { lead, assignedPm: lead.assignedPm, nextIndex: null };
 
     const cursor = await tx.roundRobinCursor.upsert({
-    where: { id: "default" },
+    where: { id: RR_CURSOR_ID },
     update: {},
-    create: { id: "default", lastIndex: -1 },
+    create: { id: RR_CURSOR_ID, lastIndex: -1 },
   });
 
     const { pm, nextIndex } = nextRoundRobin(cursor.lastIndex);
@@ -49,12 +49,12 @@ export async function assignRoundRobin(options: {
         actor: "human",
         actorName: options.actorName,
         outcome: "assigned",
-        summary: `Round-robin assigned to ${pm} (Raymond → Austin → Cody)`,
+        summary: `Round-robin assigned to ${pm} (Raymond → Cody)`,
       },
     });
 
     await tx.roundRobinCursor.update({
-      where: { id: "default" },
+      where: { id: RR_CURSOR_ID },
       data: { lastIndex: nextIndex },
     });
 

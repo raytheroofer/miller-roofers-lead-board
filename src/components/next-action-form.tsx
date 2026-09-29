@@ -2,7 +2,7 @@
 
 import { useActionState } from "react";
 import { saveNextAction, completeNextAction } from "@/app/next-action";
-import { RR_POOL, RR_POOL_LABELS } from "@/lib/rr";
+import { isRrPm, RR_POOL, RR_POOL_LABELS } from "@/lib/rr";
 import { Button, Field, Label, Select } from "@/components/ui";
 
 export function NextActionForm({ leadId, summary, due, dueIso, assignedPm, version }: {
@@ -19,11 +19,12 @@ export function NextActionForm({ leadId, summary, due, dueIso, assignedPm, versi
       <Label htmlFor="next-due">Due — Eastern Time</Label>
       <Field id="next-due" name="due" type="datetime-local" required defaultValue={due} />
       <Label htmlFor="next-owner">Action owner / assigned PM</Label>
-      <Select id="next-owner" name="assignedPm" defaultValue={assignedPm ?? "raymond"}>
+      <Select id="next-owner" name="assignedPm" required defaultValue={assignedPm && !isRrPm(assignedPm) ? "" : assignedPm ?? "raymond"}>
+        <option value="" disabled>Choose an active owner</option>
         {RR_POOL.map(pm => <option key={pm} value={pm}>{RR_POOL_LABELS[pm]}</option>)}
       </Select>
       <Label htmlFor="assignment-reason">Reason if setting or changing owner</Label>
-      <Field id="assignment-reason" name="assignmentReason" maxLength={500} required={!assignedPm} placeholder="Why this person?" />
+      <Field id="assignment-reason" name="assignmentReason" maxLength={500} required={!isRrPm(assignedPm)} placeholder="Why this person?" />
       <Button disabled={pending} type="submit">{pending ? "Saving…" : "Save next action"}</Button>
       <p role="status" className={state.error ? "text-red-800 text-sm" : "text-sm"}>{state.error ?? state.message}</p>
     </form>

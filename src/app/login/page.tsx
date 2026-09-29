@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { auth, signIn } from "@/auth";
 import { Button } from "@/components/ui";
 import { LoginForm } from "@/components/login-form";
+import { BrandLogo } from "@/components/brand-logo";
 
 export const dynamic = "force-dynamic";
 
@@ -21,18 +22,20 @@ export default async function LoginPage({
   return (
     <div className="flex min-h-full items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
-        <p className="text-xs uppercase tracking-[0.2em] text-copper">Miller Roofing Solutions LLC</p>
-        <h1 className="mt-2 font-serif text-4xl leading-tight">Mrs Roofers lead tracker</h1>
+        <div className="flex items-center gap-4"><BrandLogo />
+          <p className="text-xl font-semibold leading-tight text-navy">Miller Roofing<br />Solutions</p>
+        </div>
+        <p className="mt-7 text-xs font-semibold uppercase tracking-[0.18em] text-bronze">Your MRS workspace</p>
+        <h1 className="mt-2 text-3xl font-semibold tracking-tight">Keep every lead moving.</h1>
         <p className="mt-3 text-sm text-muted">
-          Jacksonville insurance-restoration roofing. Phase 1 is <strong>track only</strong> — no live call, no live SMS,
-          no Roofr writeback.
+          Sign in to review leads, assign the next step and track follow-up. Jobs and appointments stay in Roofr.
         </p>
 
         <div className="mt-8 rounded-xl border border-line bg-card p-5">
           <LoginForm
             callbackUrl={params.callbackUrl || "/"}
             error={params.error}
-            defaultEmail="ray@mrsroofers.com"
+            defaultEmail=""
           />
 
           {googleEnabled ? (

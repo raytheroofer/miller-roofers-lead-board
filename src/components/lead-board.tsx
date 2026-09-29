@@ -24,7 +24,7 @@ export function LeadBoard({
   if (leads.length === 0) {
     return (
       <div className="rounded-xl border border-dashed border-line bg-card px-6 py-16 text-center">
-        <p className="font-serif text-2xl">No leads in this view</p>
+        <p className="font-semibold tracking-tight text-2xl">No leads in this view</p>
         <p className="mt-2 text-sm text-muted">
           Capture a verified lead by hand. Demo records are kept in a separate view.
         </p>
@@ -42,7 +42,7 @@ export function LeadBoard({
     return (
       <div className="overflow-x-auto rounded-xl border border-line bg-card">
         <table className="min-w-full text-left text-sm">
-          <thead className="bg-[#f7f1e7] text-[11px] uppercase tracking-wide text-muted">
+          <thead className="bg-paper text-[11px] uppercase tracking-wide text-muted">
             <tr>
               <th className="px-3 py-2">Lead</th>
               <th className="px-3 py-2">Stage</th>
@@ -57,7 +57,7 @@ export function LeadBoard({
             {leads.map((lead) => (
               <tr key={lead.id} className="border-t border-line">
                 <td className="px-3 py-2">
-                  <Link href={`/leads/${lead.id}`} className="font-medium hover:text-copper">
+                  <Link href={`/leads/${lead.id}${query}`} className="font-medium hover:text-copper">
                     {lead.name}
                   </Link>
                   <div className="text-xs text-muted">{lead.address ?? "No address"}</div>
@@ -83,12 +83,12 @@ export function LeadBoard({
       {STAGES.map((stage) => {
         const column = leads.filter((lead) => lead.stage === stage);
         return (
-          <section key={stage} className="w-[240px] shrink-0">
-            <header className="mb-2 flex items-baseline justify-between">
+          <section key={stage} className="w-[260px] shrink-0">
+            <header className="mb-2 flex items-baseline justify-between border-t-2 border-gold px-2 pt-3">
               <h2 className="text-sm font-medium">{STAGE_LABELS[stage as Stage]}</h2>
-              <span className="text-xs text-muted">{column.length}</span>
+              <span className="rounded-full bg-copper-soft px-2 py-0.5 text-xs font-semibold text-navy">{column.length}</span>
             </header>
-            <div className="min-h-[140px] space-y-2 rounded-xl bg-[#e8e1d4]/50 p-2">
+            <div className="min-h-[140px] space-y-2 rounded-xl bg-[#e7eff0] p-2">
               {column.length === 0 ? (
                 <p className="px-2 py-6 text-center text-xs text-muted">Empty</p>
               ) : (
@@ -96,7 +96,7 @@ export function LeadBoard({
                   <Link
                     key={lead.id}
                     href={`/leads/${lead.id}${query}`}
-                    className="block rounded-lg border border-line bg-card p-3 hover:border-copper/40"
+                    className="block rounded-lg border border-line bg-card p-3 shadow-sm transition-colors hover:border-navy hover:bg-copper-soft/30"
                   >
                     <p className="font-medium leading-snug">{lead.name}</p>
                     <p className="mt-1 text-xs text-muted">{lead.zip ?? lead.address ?? "Jacksonville area"}</p>

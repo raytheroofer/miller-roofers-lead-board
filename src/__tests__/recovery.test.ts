@@ -9,11 +9,11 @@ afterEach(() => vi.unstubAllEnvs());
 describe("owner recovery boundaries", () => {
   it("keeps a custom owner admitted when team access is deliberately enabled", () => {
     vi.stubEnv("OWNER_ONLY", "false"); vi.stubEnv("OWNER_EMAIL", "owner@example.test");
-    vi.stubEnv("ALLOWED_EMAILS", "austin@mrsroofers.com");
+    vi.stubEnv("ALLOWED_EMAILS", "staff@example.test");
     expect(isAllowlistedEmail("owner@example.test")).toBe(true);
-    expect(isAllowlistedEmail("austin@mrsroofers.com")).toBe(true);
+    expect(isAllowlistedEmail("staff@example.test")).toBe(true);
   });
-  it.each(["owner@example.test", "austin@mrsroofers.com"])("gives the configured owner %s the owner role", email => {
+  it.each(["owner@example.test", "ray@mrsroofers.com"])("gives the configured owner %s the owner role", email => {
     vi.stubEnv("OWNER_EMAIL", email);
     expect(staffFromEmail(email).role).toBe("owner");
   });
@@ -50,5 +50,30 @@ describe("Eastern appointment and action times", () => {
   it("uses standard time in winter", () => expect(parseEasternInput("2026-12-01T08:00").toISOString()).toBe("2026-12-01T13:00:00.000Z"));
   it.each(["2026-03-08T02:30", "2026-11-01T01:30", "2026-02-30T12:00", "invalid", "2026-09-29"])("rejects invalid or DST-ambiguous time %s", value => {
     expect(() => parseEasternInput(value)).toThrow();
+  });
+});
+
+
+describe("current staff access", () => {
+  it.each(["true", "false"])("blocks Austin despite a stale allowlist in owner-only=%s", ownerOnly => {
+    vi.stubEnv("OWNER_ONLY", ownerOnly);
+    vi.stubEnv("ALLOWED_EMAILS", "austin@mrsroofers.com,cody@mrsroofers.com");
+    expect(isAllowlistedEmail("austin@mrsroofers.com")).toBe(false);
+  });
+  it("enables only Cody alongside the owner with a separate credential", () => {
+    vi.stubEnv("OWNER_ONLY", "true");
+    vi.stubEnv("OWNER_EMAIL", "ray@mrsroofers.com");
+    vi.stubEnv("CODY_PASSWORD", "isolated-test-cody-password");
+    vi.stubEnv("AUTH_PASSWORD", "isolated-test-shared-password");
+    expect(allowedEmails()).toEqual(["ray@mrsroofers.com", "cody@mrsroofers.com"]);
+    expect(staffFromEmail("cody@mrsroofers.com")).toMatchObject({ name: "Cody Boyd", role: "pm", slug: "cody" });
+    expect(isAllowlistedEmail("firstmate@mrsroofers.com")).toBe(false);
+  });
+  it.each(["", "too-short", "isolated-test-shared-password"])("keeps Cody disabled without a separate strong credential: %s", password => {
+    vi.stubEnv("OWNER_ONLY", "false");
+    vi.stubEnv("ALLOWED_EMAILS", "cody@mrsroofers.com");
+    vi.stubEnv("AUTH_PASSWORD", "isolated-test-shared-password");
+    vi.stubEnv("CODY_PASSWORD", password);
+    expect(isAllowlistedEmail("cody@mrsroofers.com")).toBe(false);
   });
 });

@@ -1,6 +1,9 @@
+import { CODY_EMAIL, codyPassword } from "@/lib/cody-access";
+
+const REVOKED_EMAILS = new Set(["austin@mrsroofers.com"]);
+
 export const DEFAULT_ALLOWED_EMAILS = [
   "ray@mrsroofers.com",
-  "austin@mrsroofers.com",
   "cody@mrsroofers.com",
 ] as const;
 
@@ -10,13 +13,6 @@ export const STAFF_DIRECTORY = [
     name: "Raymond",
     slug: "raymond",
     role: "owner",
-    inRrPool: true,
-  },
-  {
-    email: "austin@mrsroofers.com",
-    name: "Austin Maddox",
-    slug: "austin",
-    role: "pm",
     inRrPool: true,
   },
   {
@@ -36,7 +32,8 @@ export const STAFF_DIRECTORY = [
 ] as const;
 
 export function allowedEmails(): string[] {
-  if (process.env.OWNER_ONLY !== "false") return [ownerEmail()];
+  const ownerAndCody = [ownerEmail(), ...(codyPassword() ? [CODY_EMAIL] : [])];
+  if (process.env.OWNER_ONLY !== "false") return ownerAndCody.filter(email => !REVOKED_EMAILS.has(email));
   const fromEnv = process.env.ALLOWED_EMAILS?.split(",")
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
@@ -44,7 +41,8 @@ export function allowedEmails(): string[] {
     .trim()
     .toLowerCase();
   const base = fromEnv && fromEnv.length > 0 ? fromEnv : [...DEFAULT_ALLOWED_EMAILS];
-  return Array.from(new Set([ownerEmail(), ...base.map((v) => v.toLowerCase()), firstmate]));
+  return Array.from(new Set([...ownerAndCody, ...base.map((v) => v.toLowerCase()), firstmate]))
+    .filter(email => !REVOKED_EMAILS.has(email) && (email !== CODY_EMAIL || Boolean(codyPassword())));
 }
 
 export function ownerEmail(): string {

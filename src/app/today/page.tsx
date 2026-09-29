@@ -26,7 +26,7 @@ export default async function TodayPage() {
     { title: "Upcoming", rows: leads.filter(l => l.nextActionAt && l.nextActionAt > now) },
   ];
   return <AppShell userName={session.user.name ?? "Owner"} userEmail={session.user.email ?? ""} pathname="/today">
-    <h1 className="font-serif text-3xl">Today</h1>
+    <h1 className="font-semibold tracking-tight text-3xl">Today</h1>
     <p className="mt-2 text-sm text-muted">{leads.length} open leads · Checked {formatDateTime(now)} ET. Manual updates; no live Roofr or accounting sync.</p>
     <div className="my-5 flex flex-wrap gap-3 text-sm">
       <Link className="rounded-md bg-navy px-3 py-2 text-white" href="/leads/new">Capture a lead</Link>
@@ -40,7 +40,7 @@ export default async function TodayPage() {
       <p className="mt-2 text-muted">Won work continues in Roofr. Demo and system-check records are excluded here. This queue does not claim to contain every active MRS job.</p>
     </Card>
     <div className="grid gap-5 lg:grid-cols-3">{groups.map(group => <section key={group.title}>
-      <h2 className="mb-3 font-serif text-xl">{group.title} <span className="text-sm text-muted">({group.rows.length})</span></h2>
+      <h2 className="mb-3 font-semibold tracking-tight text-xl">{group.title} <span className="text-sm text-muted">({group.rows.length})</span></h2>
       <div className="space-y-3">{group.rows.length === 0 ? <Card className="p-4 text-sm text-muted">No records in this group.</Card> : group.rows.map(lead => <Card key={lead.id} className="p-4">
         <Link href={`/leads/${lead.id}`} className="font-medium underline">{lead.name}</Link>
         <p className="mt-2 text-sm">{lead.nextActionAt ? lead.activities[0]?.summary ?? "Review the scheduled appointment" : "Choose the next action"}</p>

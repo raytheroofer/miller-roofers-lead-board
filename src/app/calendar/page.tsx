@@ -27,7 +27,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
       userEmail={session.user.email ?? ""}
       pathname="/calendar"
     >
-      <h1 className="font-serif text-3xl">Calendar display</h1>
+      <h1 className="font-semibold tracking-tight text-3xl">Calendar display</h1>
       <p className="mt-1 max-w-2xl text-sm text-muted">
         Source of truth is the <strong>Roofr calendar</strong>. This page only shows human-entered appointments from the
         tracker. Phase 1 does not write Google or Roofr events.
