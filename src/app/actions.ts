@@ -13,18 +13,23 @@ import { parseEasternInput } from "@/lib/eastern-time";
 import { serialTransaction } from "@/lib/transaction";
 import { InputError, runFormAction } from "@/lib/input-error";
 import { isCurrentConfirmedAppointment } from "@/lib/appointment";
+import { captureManualLead } from "@/lib/manual-capture";
 
 export async function createLeadAction(formData: FormData) {
   return runFormAction(async () => {
   const actor = await actorFromSession();
   const name = String(formData.get("name") ?? "").trim();
   const source = String(formData.get("source") ?? "other");
+  const captureId = String(formData.get("captureId") ?? "");
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(captureId)) {
+    throw new InputError("Reload the capture form before saving this lead.");
+  }
   if (!name) throw new InputError("Name is required");
   if (!isLeadSource(source)) throw new InputError("Invalid source");
 
   const phone = String(formData.get("phone") ?? "").trim();
-  const lead = await prisma.lead.create({
-    data: {
+  const lead = await captureManualLead({
+      id: captureId,
       name,
       source,
       phones: JSON.stringify(phone ? [phone] : []),
@@ -37,7 +42,6 @@ export async function createLeadAction(formData: FormData) {
       roofAge: String(formData.get("roofAge") ?? "") || null,
       urgency: String(formData.get("urgency") ?? "") || null,
       activities: { create: { type: "note", actor: "human", actorName: actor.name, summary: "Lead captured" } },
-    },
   });
 
   redirect(`/leads/${lead.id}`);

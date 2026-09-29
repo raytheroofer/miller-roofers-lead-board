@@ -297,9 +297,10 @@ export function OpportunityForm({
   );
 }
 
-export function NewLeadForm() {
+export function NewLeadForm({ captureId }: { captureId: string }) {
   return (
     <ActionForm action={createLeadAction} className="grid gap-3 sm:grid-cols-2">
+      <input type="hidden" name="captureId" value={captureId} />
       <div className="sm:col-span-2">
         <Label>Homeowner</Label>
         <Field name="name" required placeholder="James Whitaker" />
