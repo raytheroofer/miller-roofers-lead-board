@@ -1,23 +1,11 @@
 "use client";
+import Link from "next/link";
 
-export default function ErrorPage({
-  error,
-  reset,
-}: {
-  error: Error & { digest?: string };
-  reset: () => void;
-}) {
-  return (
-    <div className="flex min-h-full flex-col items-center justify-center px-4">
-      <h1 className="font-serif text-3xl">Something broke in the tracker</h1>
-      <p className="mt-2 max-w-md text-center text-sm text-muted">{error.message}</p>
-      <button
-        type="button"
-        onClick={reset}
-        className="mt-4 rounded-md bg-navy px-3 py-2 text-sm text-white"
-      >
-        Try again
-      </button>
-    </div>
-  );
+export default function ErrorPage({ reset }: { reset: () => void }) {
+  return <main className="mx-auto max-w-xl space-y-4 p-8">
+    <h1 className="font-serif text-2xl">This request could not be completed</h1>
+    <p>Check the current record before trying again; a save may have completed before the response failed.</p>
+    <button className="rounded-md border px-3 py-2" onClick={() => reset()}>Reload this view</button>
+    <p><Link className="underline" href="/today">Return to Today</Link></p>
+  </main>;
 }

@@ -1,17 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import { isWebhookSource } from "@/lib/sources";
+import { safeWebhookHeaders, validWebhookSecret } from "@/lib/webhook-security";
 
 export const dynamic = "force-dynamic";
-
-const SENSITIVE_HEADER = /authorization|cookie|x-api-key|twilio-auth/i;
-
-function redactHeaders(headers: Headers): Record<string, string> {
-  const out: Record<string, string> = {};
-  headers.forEach((value, key) => {
-    out[key] = SENSITIVE_HEADER.test(key) ? "[redacted]" : value;
-  });
-  return out;
-}
 
 async function storeWebhook(source: string, request: Request) {
   if (!isWebhookSource(source)) {
@@ -22,33 +13,47 @@ async function storeWebhook(source: string, request: Request) {
   }
 
   const secret = process.env.WEBHOOK_SECRET;
-  if (secret) {
+  if (process.env.FEATURE_WEBHOOK_INBOX !== "true" || !secret) {
+    return Response.json({ ok: false, error: "Webhook inbox is disabled. Use manual intake." }, { status: 503 });
+  }
+  {
     const provided =
       request.headers.get("x-mrs-webhook-secret") ??
       request.headers.get("x-webhook-secret");
-    if (provided !== secret) {
+    if (!validWebhookSecret(provided, secret)) {
       return Response.json({ ok: false, error: "Invalid webhook secret" }, { status: 401 });
     }
   }
 
+  if (!request.headers.get("content-type")?.includes("application/json")) {
+    return Response.json({ ok: false, error: "JSON is required" }, { status: 415 });
+  }
   let payload: unknown;
-  const contentType = request.headers.get("content-type") ?? "";
   try {
-    if (contentType.includes("application/json")) {
-      payload = await request.json();
-    } else {
-      const text = await request.text();
-      payload = text.length > 0 ? text : {};
+    const reader = request.body?.getReader();
+    if (!reader) throw new Error("Empty body");
+    const chunks: Uint8Array[] = [];
+    let bytes = 0;
+    while (true) {
+      const chunk = await reader.read();
+      if (chunk.done) break;
+      bytes += chunk.value.byteLength;
+      if (bytes > 256_000) {
+        await reader.cancel();
+        return Response.json({ ok: false, error: "Payload too large" }, { status: 413 });
+      }
+      chunks.push(chunk.value);
     }
+    payload = JSON.parse(Buffer.concat(chunks).toString("utf8"));
   } catch {
-    payload = { parseError: true };
+    return Response.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
   }
 
   const event = await prisma.webhookEvent.create({
     data: {
       source,
       payload: JSON.stringify(payload),
-      headers: JSON.stringify(redactHeaders(request.headers)),
+      headers: JSON.stringify(safeWebhookHeaders(request.headers)),
       note: "stored_only",
     },
   });
@@ -83,7 +88,7 @@ export async function GET(
   return Response.json({
     ok: true,
     source,
-    mode: "store_only",
+    mode: process.env.FEATURE_WEBHOOK_INBOX === "true" && process.env.WEBHOOK_SECRET ? "store_only" : "disabled",
     twilioLive: process.env.FEATURE_TWILIO_LIVE === "true",
     hint: `POST JSON to /api/webhooks/${source} to store a payload with no side effects.`,
   });

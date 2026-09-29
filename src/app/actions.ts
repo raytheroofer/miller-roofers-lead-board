@@ -9,6 +9,8 @@ import { isLeadSource } from "@/lib/sources";
 import { assertTransition, isStage } from "@/lib/stages";
 import { isRrPm } from "@/lib/rr";
 import { canTransition } from "@/lib/stages";
+import { parseEasternInput } from "@/lib/eastern-time";
+import { serialTransaction } from "@/lib/transaction";
 
 export async function createLeadAction(formData: FormData) {
   const actor = await actorFromSession();
@@ -31,16 +33,7 @@ export async function createLeadAction(formData: FormData) {
       insuranceCarrier: String(formData.get("insuranceCarrier") ?? "") || null,
       roofAge: String(formData.get("roofAge") ?? "") || null,
       urgency: String(formData.get("urgency") ?? "") || null,
-    },
-  });
-
-  await prisma.activity.create({
-    data: {
-      leadId: lead.id,
-      type: "note",
-      actor: "human",
-      actorName: actor.name,
-      summary: "Lead captured",
+      activities: { create: { type: "note", actor: "human", actorName: actor.name, summary: "Lead captured" } },
     },
   });
 
@@ -51,110 +44,69 @@ export async function updateStageAction(formData: FormData) {
   const actor = await actorFromSession();
   const id = String(formData.get("leadId") ?? "");
   const stage = String(formData.get("stage") ?? "");
-  const lead = await prisma.lead.findUnique({ where: { id } });
-  if (!lead) throw new Error("Lead not found");
   if (!isStage(stage)) throw new Error("Invalid stage");
-  assertTransition(lead.stage, stage, { allowBackward: actor.allowBackward });
-
-  await prisma.lead.update({
-    where: { id },
-    data: {
-      stage,
-      result: stage === "won" ? "won" : stage === "lost_nurture" ? "lost" : lead.result,
-      reasonCode: String(formData.get("reasonCode") ?? "") || lead.reasonCode,
-    },
+  await serialTransaction(async tx => {
+    const lead = await tx.lead.findUniqueOrThrow({ where: { id }, include: { opportunity: true } });
+    assertTransition(lead.stage, stage, { allowBackward: actor.allowBackward });
+    if (stage === "won" && !lead.opportunity?.roofrId) throw new Error("Link the Roofr job before marking this lead won.");
+    if (stage === "appointment_set" && !await tx.appointment.findFirst({ where: { leadId: id, roofrCalendarId: { not: null } } })) {
+      throw new Error("Log the confirmed Roofr appointment first.");
+    }
+    const reasonCode = String(formData.get("reasonCode") ?? "").trim() || lead.reasonCode;
+    if (stage === "lost_nurture" && !reasonCode) throw new Error("Record the lost or nurture reason.");
+    await tx.lead.update({ where: { id }, data: { stage,
+      result: stage === "won" ? "won" : stage === "lost_nurture" ? "lost" : null, reasonCode } });
+    await tx.activity.create({ data: { leadId: id, type: "stage", actor: "human", actorName: actor.name,
+      outcome: stage, summary: `Stage ${lead.stage} → ${stage}` } });
   });
-
-  await prisma.activity.create({
-    data: {
-      leadId: id,
-      type: "stage",
-      actor: "human",
-      actorName: actor.name,
-      outcome: stage,
-      summary: `Stage ${lead.stage} → ${stage}`,
-    },
-  });
-
-  revalidatePath("/");
-  revalidatePath(`/leads/${id}`);
+  revalidatePath("/"); revalidatePath("/today"); revalidatePath(`/leads/${id}`);
 }
 
 export async function logActivityAction(formData: FormData) {
   const actor = await actorFromSession();
   const id = String(formData.get("leadId") ?? "");
   const type = String(formData.get("type") ?? "note");
-  const lead = await prisma.lead.findUnique({ where: { id } });
-  if (!lead) throw new Error("Lead not found");
-
-  await prisma.activity.create({
-    data: {
-      leadId: id,
-      type,
-      direction: String(formData.get("direction") ?? "outbound"),
-      actor: "human",
-      actorName: actor.name,
-      outcome: String(formData.get("outcome") ?? "") || null,
-      body: String(formData.get("body") ?? "") || null,
-      summary: String(formData.get("summary") ?? "") || `${type} logged (human-entered)`,
-    },
+  if (!["call", "sms", "email", "note"].includes(type)) throw new Error("Invalid activity type");
+  await serialTransaction(async tx => {
+    const lead = await tx.lead.findUniqueOrThrow({ where: { id } });
+    await tx.activity.create({ data: { leadId: id, type,
+      direction: String(formData.get("direction") ?? "outbound"), actor: "human", actorName: actor.name,
+      outcome: String(formData.get("outcome") ?? "") || null, body: String(formData.get("body") ?? "") || null,
+      summary: String(formData.get("summary") ?? "") || `${type} logged (human-entered)` } });
+    if ((type === "call" || type === "sms") && canTransition(lead.stage, "contact")) {
+      await tx.lead.update({ where: { id }, data: { stage: "contact" } });
+    }
   });
-
-  if ((type === "call" || type === "sms") && canTransition(lead.stage, "contact")) {
-    await prisma.lead.update({ where: { id }, data: { stage: "contact" } });
-  }
-
-  revalidatePath(`/leads/${id}`);
-  revalidatePath("/");
+  revalidatePath(`/leads/${id}`); revalidatePath("/"); revalidatePath("/today");
 }
 
 export async function setAppointmentAction(formData: FormData) {
   const actor = await actorFromSession();
   const id = String(formData.get("leadId") ?? "");
-  const lead = await prisma.lead.findUnique({ where: { id } });
-  if (!lead) throw new Error("Lead not found");
-  const startsAt = String(formData.get("startsAt") ?? "");
-  if (!startsAt) throw new Error("Start time is required");
-  const assignee = String(formData.get("assignee") ?? lead.assignedPm ?? "raymond");
-  if (!isRrPm(assignee)) throw new Error("Assignee must be in the RR pool");
-
-  const appointment = await prisma.appointment.create({
-    data: {
-      leadId: id,
-      startsAt: new Date(startsAt),
-      endsAt: formData.get("endsAt") ? new Date(String(formData.get("endsAt"))) : null,
-      assignee,
-      roofrCalendarId: String(formData.get("roofrCalendarId") ?? "") || null,
-      status: "set",
-      notes: String(formData.get("notes") ?? "") || null,
-    },
-  });
-
-  await prisma.lead.update({
-    where: { id },
-    data: {
-      assignedPm: assignee,
-      nextActionAt: appointment.startsAt,
+  const roofrCalendarId = String(formData.get("roofrCalendarId") ?? "").trim();
+  if (!roofrCalendarId) throw new Error("Book in Roofr first and enter the confirmed appointment reference.");
+  const startsAt = parseEasternInput(String(formData.get("startsAt") ?? ""));
+  const endsAt = formData.get("endsAt") ? parseEasternInput(String(formData.get("endsAt"))) : null;
+  if (endsAt && endsAt <= startsAt) throw new Error("End time must follow the start time.");
+  const assignee = String(formData.get("assignee") ?? "");
+  if (!isRrPm(assignee)) throw new Error("Choose an assigned PM.");
+  await serialTransaction(async tx => {
+    const lead = await tx.lead.findUniqueOrThrow({ where: { id } });
+    const existing = await tx.appointment.findFirst({ where: { leadId: id, roofrCalendarId } });
+    if (existing) return;
+    await tx.appointment.create({ data: { leadId: id, startsAt, endsAt, assignee, roofrCalendarId,
+      status: "set", notes: String(formData.get("notes") ?? "") || null } });
+    await tx.lead.update({ where: { id }, data: {
+      assignedPm: assignee, nextActionAt: startsAt,
       stage: canTransition(lead.stage, "appointment_set") ? "appointment_set" : lead.stage,
-    },
+    } });
+    await tx.activity.create({ data: { leadId: id, type: "next_action", actor: "human", actorName: actor.name,
+      outcome: "appointment_set", summary: "Attend the confirmed Roofr appointment",
+      body: `Roofr reference: ${roofrCalendarId}; starts ${startsAt.toISOString()}; owner ${assignee}` } });
+    if (lead.assignedPm !== assignee) await tx.assignmentEvent.create({ data: { leadId: id,
+      fromPm: lead.assignedPm, toPm: assignee, reason: "confirmed_appointment_owner", actor: actor.name } });
   });
-
-  await prisma.activity.create({
-    data: {
-      leadId: id,
-      type: "note",
-      actor: "human",
-      actorName: actor.name,
-      outcome: "appointment_set",
-      summary:
-        "Appointment set (human-entered). Display only — book the slot in Roofr calendar, then paste the Roofr calendar id.",
-      body: appointment.roofrCalendarId ?? undefined,
-    },
-  });
-
-  revalidatePath(`/leads/${id}`);
-  revalidatePath("/");
-  revalidatePath("/calendar");
+  revalidatePath(`/leads/${id}`); revalidatePath("/"); revalidatePath("/today"); revalidatePath("/calendar");
 }
 
 export async function assignRoundRobinAction(formData: FormData) {
@@ -174,6 +126,7 @@ export async function assignManualAction(formData: FormData) {
     toPm,
     actorName: actor.name,
     reason: leadReason(formData.get("reason")),
+    reasonNote: String(formData.get("reasonNote") ?? ""),
   });
   revalidatePath(`/leads/${id}`);
   revalidatePath("/");
@@ -184,23 +137,24 @@ function leadReason(value: FormDataEntryValue | null): "manual_override" | "reas
 }
 
 export async function updateOpportunityAction(formData: FormData) {
-  await actorFromSession();
+  const actor = await actorFromSession();
   const id = String(formData.get("leadId") ?? "");
-  await prisma.opportunityLink.upsert({
-    where: { leadId: id },
-    create: {
-      leadId: id,
-      roofrId: String(formData.get("roofrId") ?? "") || null,
-      mrsJobId: String(formData.get("mrsJobId") ?? "") || null,
-      companycamRef: String(formData.get("companycamRef") ?? "") || null,
-    },
-    update: {
-      roofrId: String(formData.get("roofrId") ?? "") || null,
-      mrsJobId: String(formData.get("mrsJobId") ?? "") || null,
-      companycamRef: String(formData.get("companycamRef") ?? "") || null,
-    },
+  const roofrId = String(formData.get("roofrId") ?? "").trim() || null;
+  const companycamRef = String(formData.get("companycamRef") ?? "").trim() || null;
+  if (roofrId && !/^\d+$/.test(roofrId)) throw new Error("Use the numeric Roofr job number.");
+  if (companycamRef && !/^https:\/\/app\.companycam\.com\/projects\/\d+\/?$/.test(companycamRef)) {
+    throw new Error("Use the CompanyCam project URL from app.companycam.com/projects/…");
+  }
+  await serialTransaction(async tx => {
+    if (roofrId && await tx.opportunityLink.findFirst({ where: { roofrId, leadId: { not: id } } })) {
+      throw new Error("That Roofr job is already linked to another lead. Review the existing record first.");
+    }
+    await tx.opportunityLink.upsert({ where: { leadId: id },
+      create: { leadId: id, roofrId, companycamRef }, update: { roofrId, companycamRef } });
+    await tx.activity.create({ data: { leadId: id, type: "note", actor: "human", actorName: actor.name,
+      summary: "Job links verified and updated manually", body: `Roofr: ${roofrId ?? "none"}; CompanyCam: ${companycamRef ?? "none"}` } });
   });
-  revalidatePath(`/leads/${id}`);
+  revalidatePath(`/leads/${id}`); revalidatePath("/today");
 }
 
 export async function updateLeadDetailsAction(formData: FormData) {

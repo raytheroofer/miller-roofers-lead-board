@@ -8,7 +8,8 @@ import {
   updateOpportunityAction,
   updateStageAction,
 } from "@/app/actions";
-import { Button, Field, Label, Select, Area } from "@/components/ui";
+import { Field, Label, Select, Area } from "@/components/ui";
+import { SubmitButton as Button } from "@/components/submit-button";
 import { RR_POOL, RR_POOL_LABELS, type RrPm } from "@/lib/rr";
 import { LEAD_SOURCES, SOURCE_LABELS } from "@/lib/sources";
 import { STAGES, STAGE_LABELS, canTransition, type Stage } from "@/lib/stages";
@@ -99,11 +100,11 @@ export function SetAppointmentForm({
         Human-entered display only. Book the real slot in <strong>Roofr calendar</strong>, then paste the id.
       </p>
       <div>
-        <Label>Starts</Label>
+        <Label>Starts — Eastern Time</Label>
         <Field name="startsAt" type="datetime-local" required />
       </div>
       <div>
-        <Label>Ends</Label>
+        <Label>Ends — Eastern Time</Label>
         <Field name="endsAt" type="datetime-local" />
       </div>
       <div>
@@ -118,7 +119,7 @@ export function SetAppointmentForm({
       </div>
       <div>
         <Label>Roofr calendar id</Label>
-        <Field name="roofrCalendarId" placeholder="Paste from Roofr — we do not write the calendar" />
+        <Field name="roofrCalendarId" required placeholder="Paste the confirmed appointment reference from Roofr" />
       </div>
       <div>
         <Label>Notes</Label>
@@ -132,18 +133,20 @@ export function SetAppointmentForm({
 export function AssignPanel({
   leadId,
   assignedPm,
+  source,
 }: {
   leadId: string;
   assignedPm: string | null;
+  source: string;
 }) {
   return (
     <div className="space-y-4">
-      <form action={assignRoundRobinAction}>
+      {source === "remodel-favor" && !assignedPm && <form action={assignRoundRobinAction}>
         <input type="hidden" name="leadId" value={leadId} />
         <Button type="submit" variant="secondary" className="w-full">
           Round-robin assign (Ray → Austin → Cody)
         </Button>
-      </form>
+      </form>}
       <form action={assignManualAction} className="space-y-2">
         <input type="hidden" name="leadId" value={leadId} />
         <input type="hidden" name="reason" value={assignedPm ? "reassign" : "manual_override"} />
@@ -155,11 +158,13 @@ export function AssignPanel({
             </option>
           ))}
         </Select>
+        <Label>Assignment reason</Label>
+        <Field name="reasonNote" required maxLength={500} placeholder="Why this PM?" />
         <Button type="submit" variant="ghost" className="w-full">
           Assign selected PM
         </Button>
       </form>
-      <p className="text-xs text-muted">Chris Bell is out of the routing pool. Quiet RR — no notify.</p>
+      <p className="text-xs text-muted">Round-robin applies only to unassigned Remodel Favor leads. Other sources are assigned manually. No automatic notification.</p>
     </div>
   );
 }
@@ -277,8 +282,8 @@ export function OpportunityForm({
         <Field name="roofrId" defaultValue={roofrId ?? ""} placeholder="Paste existing Roofr opportunity id" />
       </div>
       <div>
-        <Label>MRS Job ID</Label>
-        <Field name="mrsJobId" defaultValue={mrsJobId ?? ""} />
+        <Label>Legacy reference — read only</Label>
+        <p className="text-sm text-muted">{mrsJobId || "None"}. Roofr job number is the only current job ID.</p>
       </div>
       <div>
         <Label>CompanyCam</Label>

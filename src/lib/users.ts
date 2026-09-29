@@ -36,6 +36,7 @@ export const STAFF_DIRECTORY = [
 ] as const;
 
 export function allowedEmails(): string[] {
+  if (process.env.OWNER_ONLY !== "false") return [ownerEmail()];
   const fromEnv = process.env.ALLOWED_EMAILS?.split(",")
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
@@ -44,6 +45,10 @@ export function allowedEmails(): string[] {
     .toLowerCase();
   const base = fromEnv && fromEnv.length > 0 ? fromEnv : [...DEFAULT_ALLOWED_EMAILS];
   return Array.from(new Set([...base.map((v) => v.toLowerCase()), firstmate]));
+}
+
+export function ownerEmail(): string {
+  return (process.env.OWNER_EMAIL || "ray@mrsroofers.com").trim().toLowerCase();
 }
 
 export function firstmateEmail(): string {

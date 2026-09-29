@@ -1,25 +1,27 @@
-import { prisma } from "@/lib/prisma";
 import { assertAssignablePm, nextRoundRobin, type RrPm } from "@/lib/rr";
 import { canTransition } from "@/lib/stages";
+import { serialTransaction } from "@/lib/transaction";
 
 export async function assignRoundRobin(options: {
   leadId: string;
   actorName: string;
 }) {
-  const lead = await prisma.lead.findUnique({ where: { id: options.leadId } });
+  return serialTransaction(async (tx) => {
+    const lead = await tx.lead.findUnique({ where: { id: options.leadId } });
   if (!lead) {
     throw new Error("Lead not found");
   }
+  if (lead.source !== "remodel-favor") throw new Error("Round-robin is only for Remodel Favor leads. Use manual assignment for this source.");
+  if (lead.assignedPm) return { lead, assignedPm: lead.assignedPm, nextIndex: null };
 
-  const cursor = await prisma.roundRobinCursor.upsert({
+    const cursor = await tx.roundRobinCursor.upsert({
     where: { id: "default" },
     update: {},
     create: { id: "default", lastIndex: -1 },
   });
 
-  const { pm, nextIndex } = nextRoundRobin(cursor.lastIndex);
+    const { pm, nextIndex } = nextRoundRobin(cursor.lastIndex);
 
-  return prisma.$transaction(async (tx) => {
     const updated = await tx.lead.update({
       where: { id: lead.id },
       data: {
@@ -64,14 +66,16 @@ export async function assignManual(options: {
   toPm: string;
   actorName: string;
   reason: "manual_override" | "reassign";
+  reasonNote: string;
 }) {
   assertAssignablePm(options.toPm);
-  const lead = await prisma.lead.findUnique({ where: { id: options.leadId } });
+  if (!options.reasonNote?.trim()) throw new Error("Explain the assignment or reassignment.");
+  return serialTransaction(async (tx) => {
+    const lead = await tx.lead.findUnique({ where: { id: options.leadId } });
   if (!lead) {
     throw new Error("Lead not found");
   }
 
-  return prisma.$transaction(async (tx) => {
     const updated = await tx.lead.update({
       where: { id: lead.id },
       data: {
@@ -99,6 +103,7 @@ export async function assignManual(options: {
         actorName: options.actorName,
         outcome: options.reason,
         summary: `Manual assign ${lead.assignedPm ?? "unassigned"} → ${options.toPm}`,
+        body: options.reasonNote.trim(),
       },
     });
 

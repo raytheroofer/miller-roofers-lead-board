@@ -18,8 +18,8 @@ export default async function NewLeadPage() {
     >
       <h1 className="font-serif text-3xl">Capture a lead</h1>
       <p className="mt-1 max-w-2xl text-sm text-muted">
-        Manual intake for First Coast homeowners. Website, LSA, GHL, and Remodel Favor webhooks only store payloads in
-        Phase 1 — they do not auto-create leads yet.
+        Verify the lead in its original source, then capture it here. Create or find the opportunity in Roofr the same day
+        and link its job number. Intake is manual; automatic import is paused during recovery.
       </p>
       <Card className="mt-6 max-w-3xl p-5">
         <NewLeadForm />

@@ -18,6 +18,9 @@ import { formatDateTime, parseJsonArray } from "@/lib/utils";
 import { pmLabel } from "@/lib/rr";
 import { sourceLabel } from "@/lib/sources";
 import { canOverrideStages } from "@/lib/users";
+import { NextActionForm } from "@/components/next-action-form";
+import { easternInput } from "@/lib/eastern-time";
+import { isDemoLead } from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
 
@@ -72,6 +75,7 @@ export default async function LeadDetailPage({
       </div>
 
       <Card className="mb-5 p-4">
+        {isDemoLead(lead) && <p className="mb-3 text-sm text-copper">Demo / test record. Excluded from the Today work queue.</p>}
         <StageForm
           leadId={lead.id}
           stage={lead.stage}
@@ -81,6 +85,12 @@ export default async function LeadDetailPage({
 
       <div className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
         <div className="space-y-5">
+          <Card className="p-4">
+            <h2 className="mb-3 font-serif text-xl">Next action</h2>
+            <NextActionForm key={lead.updatedAt.toISOString()} version={lead.updatedAt.toISOString()} leadId={lead.id}
+              summary={lead.nextActionAt ? lead.activities.find(a => a.type === "next_action")?.summary ?? "" : ""}
+              due={easternInput(lead.nextActionAt)} dueIso={lead.nextActionAt?.toISOString() ?? ""} assignedPm={lead.assignedPm} />
+          </Card>
           <Card className="p-4">
             <h2 className="font-serif text-xl">Activity timeline</h2>
             {lead.activities.length === 0 ? (
@@ -131,7 +141,7 @@ export default async function LeadDetailPage({
             <h2 className="font-serif text-xl">Round-robin</h2>
             <p className="mt-1 text-sm text-muted">Current: {pmLabel(lead.assignedPm)}</p>
             <div className="mt-3">
-              <AssignPanel leadId={lead.id} assignedPm={lead.assignedPm} />
+              <AssignPanel leadId={lead.id} assignedPm={lead.assignedPm} source={lead.source} />
             </div>
           </Card>
 

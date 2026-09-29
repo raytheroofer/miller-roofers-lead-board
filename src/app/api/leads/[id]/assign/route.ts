@@ -13,6 +13,7 @@ export async function POST(
     mode?: string;
     toPm?: string;
     reason?: "manual_override" | "reassign";
+    reasonNote?: string;
   };
 
   try {
@@ -25,6 +26,7 @@ export async function POST(
         toPm: body.toPm,
         actorName: actor.name,
         reason: body.reason ?? "manual_override",
+        reasonNote: body.reasonNote ?? "",
       });
       return Response.json(result);
     }

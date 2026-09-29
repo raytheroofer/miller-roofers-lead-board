@@ -14,7 +14,7 @@ export function LoginForm({
     <form action={loginAction} method="post" className="space-y-3">
       {error ? (
         <p className="rounded-md bg-copper-soft px-3 py-2 text-sm text-copper" role="alert">
-          Sign-in failed. Use an allowlisted email and the env password.
+          Sign-in failed. Check your authorized account and password.
         </p>
       ) : null}
       <input type="hidden" name="redirectTo" value={callbackUrl || "/"} />
@@ -37,7 +37,7 @@ export function LoginForm({
           name="password"
           type="password"
           autoComplete="current-password"
-          placeholder="track-only"
+          placeholder="Your password"
           required
         />
       </div>

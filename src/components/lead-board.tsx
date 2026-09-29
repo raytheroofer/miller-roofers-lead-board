@@ -26,15 +26,13 @@ export function LeadBoard({
       <div className="rounded-xl border border-dashed border-line bg-card px-6 py-16 text-center">
         <p className="font-serif text-2xl">No leads in this view</p>
         <p className="mt-2 text-sm text-muted">
-          Import a storm/permit CSV, capture a website lead, or add one by hand.
+          Capture a verified lead by hand. Demo records are kept in a separate view.
         </p>
         <div className="mt-5 flex justify-center gap-3">
           <Link href="/leads/new" className="rounded-md bg-navy px-3 py-2 text-sm text-white">
             New lead
           </Link>
-          <Link href="/import" className="rounded-md border border-line px-3 py-2 text-sm">
-            CSV import
-          </Link>
+          <Link href="/today" className="rounded-md border border-line px-3 py-2 text-sm">Today</Link>
         </div>
       </div>
     );
