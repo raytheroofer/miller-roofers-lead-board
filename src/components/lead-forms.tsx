@@ -279,8 +279,9 @@ export function OpportunityForm({
       <input type="hidden" name="leadId" value={leadId} />
       <p className="text-sm text-muted">Read-only Roofr link. We do not create the opportunity from this app.</p>
       <div>
-        <Label>Roofr ID</Label>
-        <Field name="roofrId" defaultValue={roofrId ?? ""} placeholder="Paste existing Roofr opportunity id" />
+        <Label>Roofr job ID</Label>
+        <Field name="roofrId" defaultValue={roofrId ?? ""} placeholder="Copy the job ID shown in Roofr" />
+        <p className="mt-1 text-xs text-muted">Keep leading zeros and any hyphens. Use the existing Roofr job ID; do not invent another number.</p>
       </div>
       <div>
         <Label>Legacy reference — read only</Label>

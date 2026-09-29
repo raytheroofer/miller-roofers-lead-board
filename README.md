@@ -6,7 +6,7 @@ A manual lead tracker for Miller Roofing Solutions. Roofr remains the job book a
 
 1. Open **Today** to see open leads needing an action, overdue actions, and upcoming work.
 2. Verify each incoming lead in its original channel, capture it, and set an owner, next action, and due time in Eastern Time.
-3. Create or find the opportunity in Roofr the same day. Paste its numeric job number into the lead. The old MRS identifier is retained as a read-only legacy reference.
+3. Create or find the opportunity in Roofr the same day. Copy its job ID exactly, including leading zeros and any hyphens. Both older numeric IDs and newer date-prefixed IDs are supported. The old MRS identifier is retained as a read-only legacy reference.
 4. Book appointments in Roofr first; then record the confirmed reference and Eastern time here.
 5. Log completed calls and SMS manually. This app sends no messages.
 6. Complete an action with its result, then set the next one. Won work continues in Roofr.
