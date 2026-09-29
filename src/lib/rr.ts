@@ -21,6 +21,11 @@ export function isRrPm(value: string | null | undefined): value is RrPm {
   return !!value && (RR_POOL as readonly string[]).includes(value);
 }
 
+// Read filters include former staff; all assignment paths still require isRrPm.
+export function isReadablePm(value: string | null | undefined): value is RrPm | "austin" {
+  return value === "austin" || isRrPm(value);
+}
+
 export function nextRoundRobin(lastIndex: number): {
   pm: RrPm;
   nextIndex: number;

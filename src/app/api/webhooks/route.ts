@@ -8,6 +8,9 @@ export async function GET() {
   if (!session?.user) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
+  if (!["owner", "firstmate"].includes(session.user.role)) {
+    return Response.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const events = await prisma.webhookEvent.findMany({
     orderBy: { receivedAt: "desc" },

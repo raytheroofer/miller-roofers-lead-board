@@ -25,7 +25,7 @@ export default async function LoginPage({
         <div className="flex items-center gap-4"><BrandLogo />
           <p className="text-xl font-semibold leading-tight text-navy">Miller Roofing<br />Solutions</p>
         </div>
-        <p className="mt-7 text-xs font-semibold uppercase tracking-[0.18em] text-bronze">Your MRS workspace</p>
+        <p className="mt-7 text-xs font-semibold uppercase tracking-[0.18em] text-navy">Your MRS workspace</p>
         <h1 className="mt-2 text-3xl font-semibold tracking-tight">Keep every lead moving.</h1>
         <p className="mt-3 text-sm text-muted">
           Sign in to review leads, assign the next step and track follow-up. Jobs and appointments stay in Roofr.
