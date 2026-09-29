@@ -45,6 +45,16 @@ export default async function LeadDetailPage({
 
   if (!lead) notFound();
 
+  const roofrTeamId = process.env.ROOFR_TEAM_ID ?? "137502";
+  const roofrId = lead.opportunity?.roofrId;
+  const roofrUrl = /^\d+$/.test(roofrTeamId) && roofrId && /^\d+(?:-\d+)*$/.test(roofrId)
+    ? `https://app.roofr.com/dashboard/team/${roofrTeamId}/jobs/list-view?selectedJobId=${encodeURIComponent(roofrId)}`
+    : null;
+  const companycamRef = lead.opportunity?.companycamRef;
+  const companycamUrl = companycamRef && /^https:\/\/app\.companycam\.com\/projects\/\d+\/?$/.test(companycamRef)
+    ? companycamRef
+    : null;
+
   return (
     <AppShell
       userName={session.user.name ?? "Staff"}
@@ -188,6 +198,12 @@ export default async function LeadDetailPage({
 
           <Card className="p-4">
             <h2 className="font-serif text-xl">Roofr / job links</h2>
+            {(roofrUrl || companycamUrl) && (
+              <div className="mt-3 flex flex-wrap gap-4 text-sm">
+                {roofrUrl && <a href={roofrUrl} target="_blank" rel="noopener noreferrer" className="underline">Open saved Roofr job ↗</a>}
+                {companycamUrl && <a href={companycamUrl} target="_blank" rel="noopener noreferrer" className="underline">Open saved CompanyCam project ↗</a>}
+              </div>
+            )}
             <div className="mt-3">
               <OpportunityForm
                 leadId={lead.id}
