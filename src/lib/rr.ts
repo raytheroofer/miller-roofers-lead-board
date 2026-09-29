@@ -1,3 +1,4 @@
+import { InputError } from "@/lib/input-error";
 /**
  * Round-robin pool is locked: Raymond → Austin Maddox → Cody Boyd.
  * Chris Bell is explicitly OUT of routing.
@@ -24,12 +25,12 @@ export function nextRoundRobin(lastIndex: number): {
   nextIndex: number;
 } {
   if (!Number.isInteger(lastIndex)) {
-    throw new Error("lastIndex must be an integer");
+    throw new InputError("lastIndex must be an integer");
   }
   const nextIndex = ((lastIndex + 1) % RR_POOL.length + RR_POOL.length) % RR_POOL.length;
   const pm = RR_POOL[nextIndex];
   if (!pm) {
-    throw new Error("Round-robin pool is empty");
+    throw new InputError("Round-robin pool is empty");
   }
   return { pm, nextIndex };
 }
@@ -47,10 +48,10 @@ export function previewRoundRobinOrder(startIndex = -1, count = RR_POOL.length *
 
 export function assertAssignablePm(slug: string): asserts slug is RrPm {
   if (RR_EXCLUDED.includes(slug as (typeof RR_EXCLUDED)[number])) {
-    throw new Error("Chris Bell is out of the routing pool");
+    throw new InputError("Chris Bell is out of the routing pool");
   }
   if (!isRrPm(slug)) {
-    throw new Error(`PM "${slug}" is not in the round-robin pool (Raymond → Austin → Cody)`);
+    throw new InputError(`PM "${slug}" is not in the round-robin pool (Raymond → Austin → Cody)`);
   }
 }
 

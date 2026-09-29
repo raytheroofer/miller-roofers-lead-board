@@ -36,6 +36,7 @@ export const STAFF_DIRECTORY = [
 ] as const;
 
 export function allowedEmails(): string[] {
+  if (process.env.OWNER_ONLY !== "false") return [ownerEmail()];
   const fromEnv = process.env.ALLOWED_EMAILS?.split(",")
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
@@ -44,6 +45,10 @@ export function allowedEmails(): string[] {
     .toLowerCase();
   const base = fromEnv && fromEnv.length > 0 ? fromEnv : [...DEFAULT_ALLOWED_EMAILS];
   return Array.from(new Set([...base.map((v) => v.toLowerCase()), firstmate]));
+}
+
+export function ownerEmail(): string {
+  return (process.env.OWNER_EMAIL || "ray@mrsroofers.com").trim().toLowerCase();
 }
 
 export function firstmateEmail(): string {
@@ -56,6 +61,11 @@ export function isAllowlistedEmail(email: string): boolean {
 
 export function staffFromEmail(email: string) {
   const normalized = email.trim().toLowerCase();
+  if (normalized === ownerEmail()) {
+    const knownOwner = STAFF_DIRECTORY.find(person => person.email === normalized);
+    return { email: normalized, name: knownOwner?.name ?? "Owner", slug: knownOwner?.slug ?? "owner",
+      role: "owner" as const, inRrPool: knownOwner?.inRrPool ?? false };
+  }
   if (normalized === firstmateEmail()) {
     return {
       email: normalized,

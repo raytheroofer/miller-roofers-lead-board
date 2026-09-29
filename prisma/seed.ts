@@ -167,6 +167,10 @@ const leads = [
 ];
 
 async function main() {
+  const host = new URL(process.env.DATABASE_URL ?? "").hostname;
+  if (process.env.ALLOW_DESTRUCTIVE_DEMO_SEED !== "yes" || !["localhost", "127.0.0.1", "[::1]"].includes(host)) {
+    throw new Error("Demo seeding deletes data. It is permitted only on a disposable localhost database with ALLOW_DESTRUCTIVE_DEMO_SEED=yes.");
+  }
   await prisma.activity.deleteMany();
   await prisma.appointment.deleteMany();
   await prisma.assignmentEvent.deleteMany();

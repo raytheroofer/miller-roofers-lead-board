@@ -7,13 +7,14 @@ import { LeadBoard } from "@/components/lead-board";
 import { isLeadSource, LEAD_SOURCES, SOURCE_LABELS } from "@/lib/sources";
 import { isStage, STAGES, STAGE_LABELS } from "@/lib/stages";
 import { isRrPm, RR_POOL, RR_POOL_LABELS } from "@/lib/rr";
+import { isDemoLead } from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
 
 export default async function BoardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; stage?: string; pm?: string; source?: string }>;
+  searchParams: Promise<{ view?: string; stage?: string; pm?: string; source?: string; records?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -23,7 +24,7 @@ export default async function BoardPage({
   const pm = params.pm === "unassigned" || (params.pm && isRrPm(params.pm)) ? params.pm : undefined;
   const source = params.source && isLeadSource(params.source) ? params.source : undefined;
 
-  const leads = await prisma.lead.findMany({
+  const records = await prisma.lead.findMany({
     where: {
       stage,
       assignedPm: pm === "unassigned" ? null : pm,
@@ -37,11 +38,9 @@ export default async function BoardPage({
     orderBy: { updatedAt: "desc" },
   });
 
-  const totals = await prisma.lead.groupBy({
-    by: ["stage"],
-    _count: true,
-  });
-  const countByStage = Object.fromEntries(totals.map((row) => [row.stage, row._count]));
+  const showDemo = params.records === "demo";
+  const leads = records.filter(lead => isDemoLead(lead) === showDemo);
+  const countByStage = Object.fromEntries(STAGES.map(stage => [stage, leads.filter(l => l.stage === stage).length]));
 
   const query = new URLSearchParams();
   if (view === "table") query.set("view", "table");
@@ -61,8 +60,9 @@ export default async function BoardPage({
         <div>
           <h1 className="font-serif text-3xl">Lead board</h1>
           <p className="mt-1 text-sm text-muted">
-            {leads.length} leads · First Coast insurance restoration · RR pool Raymond → Austin → Cody
+            {leads.length} {showDemo ? "demo / test records" : "working leads"} · Manual updates · Round-robin: Remodel Favor only
           </p>
+          <Link href={showDemo ? "/" : "/?records=demo"} className="text-sm underline">{showDemo ? "Show working leads" : "View demo / test records"}</Link>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
@@ -107,6 +107,7 @@ export default async function BoardPage({
           ))}
         </select>
         <input type="hidden" name="view" value={view} />
+        {showDemo && <input type="hidden" name="records" value="demo" />}
         <button type="submit" className="rounded-md bg-navy px-3 py-2 text-sm text-white">
           Filter
         </button>
@@ -119,13 +120,14 @@ export default async function BoardPage({
 
 function toggleView(
   next: "board" | "table",
-  params: { stage?: string; pm?: string; source?: string },
+  params: { stage?: string; pm?: string; source?: string; records?: string },
 ) {
   const query = new URLSearchParams();
   if (next === "table") query.set("view", "table");
   if (params.stage) query.set("stage", params.stage);
   if (params.pm) query.set("pm", params.pm);
   if (params.source) query.set("source", params.source);
+  if (params.records === "demo") query.set("records", "demo");
   const text = query.toString();
   return text ? `/?${text}` : "/";
 }

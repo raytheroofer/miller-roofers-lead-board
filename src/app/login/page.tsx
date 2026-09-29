@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { auth, signIn } from "@/auth";
 import { Button } from "@/components/ui";
 import { LoginForm } from "@/components/login-form";
-import { DEFAULT_ALLOWED_EMAILS } from "@/lib/users";
 
 export const dynamic = "force-dynamic";
 
@@ -18,7 +17,6 @@ export default async function LoginPage({
   }
 
   const googleEnabled = Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET);
-  const firstmate = process.env.FIRSTMATE_EMAIL ?? "firstmate@mrsroofers.com";
 
   return (
     <div className="flex min-h-full items-center justify-center px-4 py-12">
@@ -52,13 +50,7 @@ export default async function LoginPage({
           ) : null}
         </div>
 
-        <div className="mt-6 text-xs leading-relaxed text-muted">
-          <p>Allowlist: {DEFAULT_ALLOWED_EMAILS.join(", ")}, plus {firstmate}.</p>
-          <p className="mt-2">
-            Local default password is in <code>.env.example</code> as <code>AUTH_PASSWORD</code> (
-            <code>track-only</code>). Firstmate uses <code>FIRSTMATE_PASSWORD</code> when set.
-          </p>
-        </div>
+        <p className="mt-6 text-xs text-muted">Private MRS workspace. Use your authorized account.</p>
       </div>
     </div>
   );

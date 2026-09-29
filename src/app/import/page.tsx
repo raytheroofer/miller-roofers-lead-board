@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui";
-import { CsvImportForm } from "@/components/csv-import-form";
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +17,10 @@ export default async function ImportPage() {
     >
       <h1 className="font-serif text-3xl">CSV import</h1>
       <p className="mt-1 max-w-2xl text-sm text-muted">
-        Storm lists, St. Johns permits, and the MRS Lead Log sheet land here as capture-stage leads. Import does not
-        assign PMs and does not write Roofr.
+        Bulk import is paused during recovery because repeating an import can create duplicate leads.
       </p>
       <Card className="mt-6 max-w-3xl p-5">
-        <CsvImportForm />
+        <p className="text-sm">Capture verified leads individually. Restore bulk import only after stable source IDs, duplicate review, and retry tests pass.</p>
       </Card>
     </AppShell>
   );

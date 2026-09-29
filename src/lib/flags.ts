@@ -13,6 +13,6 @@ export function featureFlags() {
     twilioLive: isTwilioLive(),
     roofrWrite: isRoofrWriteEnabled(),
     calendarSourceOfTruth: "roofr" as const,
-    digestDestination: "firstmate" as const,
+    digestDestination: null,
   };
 }

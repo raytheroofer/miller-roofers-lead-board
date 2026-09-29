@@ -1,126 +1,59 @@
-# MRS Leaderboard (Phase 1 — track only)
+# MRS Leaderboard — owner recovery release
 
-Lead funnel web tracker for **Miller Roofing Solutions LLC / Mrs Roofers**, Jacksonville FL insurance-restoration roofing.
+A manual lead tracker for Miller Roofing Solutions. Roofr remains the job book and calendar. Drive stores job documents, CompanyCam stores field evidence, and QuickBooks records posted accounting.
 
-Phase 1 **tracks** leads. It does **not** dial, send SMS, create Roofr opportunities, or write the Roofr calendar.
+## Owner workflow
 
-| Locked 2026-09-18 | Value |
-| --- | --- |
-| Mode | Track only |
-| Twilio / live call / live SMS | OFF (`FEATURE_TWILIO_LIVE=false`) |
-| Roofr writeback | OFF (`FEATURE_ROOFR_WRITE=false`) |
-| Calendar source of truth | Roofr calendar (display only) |
-| Round-robin | Raymond → Austin Maddox → Cody Boyd |
-| Out of routing | Chris Bell |
-| Digests | Firstmate (this app is the login for Ray, PMs, and Firstmate) |
+1. Open **Today** to see open leads needing an action, overdue actions, and upcoming work.
+2. Verify each incoming lead in its original channel, capture it, and set an owner, next action, and due time in Eastern Time.
+3. Create or find the opportunity in Roofr the same day. Paste its numeric job number into the lead. The old MRS identifier is retained as a read-only legacy reference.
+4. Book appointments in Roofr first; then record the confirmed reference and Eastern time here.
+5. Log completed calls and SMS manually. This app sends no messages.
+6. Complete an action with its result, then set the next one. Won work continues in Roofr.
 
-## What Ray can do in this preview
+Known demo records and names beginning `SYSTEM CHECK —` are excluded from the working board and Today. They remain in a separate demo view; no records are deleted.
 
-- Board or table of every funnel stage
-- Open a lead, read the activity timeline
-- Log a call or SMS by hand (no send)
-- Set an appointment by hand and paste a Roofr calendar id
-- Hit **Round-robin assign** — next PM is always Ray → Austin → Cody
-- Import a storm / permit CSV
-- Review webhook payloads that were stored and not acted on
+Round-robin applies only to **unassigned Remodel Favor** leads, in Raymond → Austin → Cody order. Repeated assignment does not advance the cursor again. Other sources require a manual assignment and explanation.
 
-## Run locally
+## Current boundaries
+
+- Owner-only access defaults on, including for previously issued sessions. Set `OWNER_ONLY=false` only after reviewing team authorization.
+- `OWNER_PASSWORD` overrides the old shared `AUTH_PASSWORD` for the owner. Before loading real customer data, the owner must set a private credential or verify the existing credential is private. Rotating `AUTH_SECRET` invalidates old sessions. Never use template passwords in production.
+- Bulk CSV import and generic lead-writing API endpoints are paused. They need duplicate-safe import and idempotency work before reopening. Owner forms remain available.
+- The webhook inbox defaults disabled. Enabling it requires both `FEATURE_WEBHOOK_INBOX=true` and `WEBHOOK_SECRET`. Enabled storage requires a matching secret, valid JSON, and a body under 256 KB. It does not create leads or perform outreach. Historical payloads remain accessible.
+- `FEATURE_TWILIO_LIVE=false` and `FEATURE_ROOFR_WRITE=false` must remain off. No automated digest is implemented.
+- Health checks now test database access. They do not establish business-data freshness.
+
+## Build and verification
+
+Use Node and the committed npm lockfile:
 
 ```bash
-cp .env.example .env
-npm install
+npm ci
 npx prisma generate
-npx prisma migrate deploy
-npm run db:seed
-npm run dev
-```
-
-Open [http://localhost:43177](http://localhost:43177).
-
-### Local logins
-
-| Who | Email | Password env | Default in `.env.example` |
-| --- | --- | --- | --- |
-| Raymond | `ray@mrsroofers.com` | `AUTH_PASSWORD` | `track-only` |
-| Austin Maddox | `austin@mrsroofers.com` | `AUTH_PASSWORD` | `track-only` |
-| Cody Boyd | `cody@mrsroofers.com` | `AUTH_PASSWORD` | `track-only` |
-| Firstmate | `FIRSTMATE_EMAIL` | `FIRSTMATE_PASSWORD` (falls back to `AUTH_PASSWORD`) | `firstmate-local` |
-
-Chris Bell is seeded with `in_rr_pool=false` and is **not** on the allowlist.
-
-## Environment variables
-
-Copy `.env.example`. Nothing in that file is a production secret.
-
-| Variable | Required | Purpose |
-| --- | --- | --- |
-| `DATABASE_URL` | Yes | PostgreSQL connection string (Neon, Vercel Postgres, Supabase). Format: `postgresql://user:password@host/db?sslmode=require` |
-| `AUTH_SECRET` | Yes at runtime | Auth.js session signing. Generate a long random string for any shared deploy. |
-| `AUTH_PASSWORD` | Yes for password login | Shared password for allowlisted PM emails |
-| `ALLOWED_EMAILS` | No | Defaults to `ray@mrsroofers.com,austin@mrsroofers.com,cody@mrsroofers.com` |
-| `FIRSTMATE_EMAIL` | No | Defaults to `firstmate@mrsroofers.com` |
-| `FIRSTMATE_PASSWORD` | No | Firstmate password; uses `AUTH_PASSWORD` if omitted |
-| `GOOGLE_CLIENT_ID` | No | Enables Google OAuth if both Google vars are set |
-| `GOOGLE_CLIENT_SECRET` | No | Google OAuth secret |
-| `AUTH_URL` / `NEXTAUTH_URL` | No | Public origin if the preview host is not detected |
-| `WEBHOOK_SECRET` | No | If set, stubs require header `x-mrs-webhook-secret` |
-| `FEATURE_TWILIO_LIVE` | No | Must stay `false` in Phase 1 |
-| `FEATURE_ROOFR_WRITE` | No | Must stay `false` in Phase 1 |
-
-Google OAuth is optional. If the Google client id/secret are missing, use the env-gated password login.
-
-## Tests
-
-```bash
+npx next typegen
+npx tsc --noEmit
 npm test
+npm run lint
+npm run build
 ```
 
-Covers round-robin order (Chris Bell never assigned) and stage transitions.
+`npm run build` and `vercel.json` generate Prisma Client and build Next.js. **Neither runs migrations or seeds.** The recovery release does not change the database schema. Install dependencies against the lockfile; do not upgrade major framework or database versions during recovery.
 
-## Webhook stubs (store only)
+For local development, configure `.env` from `.env.example` with a disposable PostgreSQL database, run `npm run db:migrate` on that database, then `npm run dev`. The port is 43177. Do not copy production credentials into a public repo.
 
-`POST /api/webhooks/{source}` writes the payload to the admin inbox and **does nothing else**.
+`db:seed` is destructive and now refuses non-local database hosts; it also requires `ALLOW_DESTRUCTIVE_DEMO_SEED=yes`. Never seed or reset a hosted database.
 
-Sources: `website` · `twilio` · `lsa` · `ghl` · `remodel_favor`
+## Deploying the repair
 
-```bash
-curl -X POST http://localhost:43177/api/webhooks/website \
-  -H 'content-type: application/json' \
-  -d '{"name":"Test","phone":"904-555-0000"}'
-```
+1. Confirm the current production commit and save its deployment URL for rollback.
+2. Verify production/preview database scope. Do not treat a preview as isolated when it uses production data.
+3. Keep existing production credentials private; set owner-specific authentication before importing customer data.
+4. Deploy this code without migration or seeding. Run only synthetic verification records in an environment sharing production data.
+5. Confirm the existing owner can read a record, save an action, refresh, complete it, and see the historical result. Test the empty working board and separate demo view.
+6. Confirm anonymous access is denied, source-specific routing holds, and disabled intake returns a visible failure.
+7. If any essential step fails, roll back to the saved deployment. Preserve all records; there is no schema rollback in this release.
 
-Live Twilio send (`POST /api/twilio/sms`) and Roofr opportunity create (`POST /api/roofr/opportunities`) return **403** while the flags are off.
+Tests cover routing policy/repeated assignment, owner allowlisting, demo classification, Eastern and daylight-saving times, next-action stale completion, and webhook rejection. Mocked service tests do not replace an actual deployed save/reload test or a PostgreSQL concurrency test.
 
-## Deploy on Vercel
-
-1. Import the repo in Vercel (Next.js is auto-detected; `vercel.json` runs `prisma generate && prisma migrate deploy && next build`).
-2. Add the env vars from `.env.example`.
-   - Set a pooled/direct PostgreSQL `DATABASE_URL` (e.g. Neon, Vercel Postgres, Supabase).
-   - Set a real `AUTH_SECRET` (generate a 32+ character random string).
-   - Set `AUTH_PASSWORD` (e.g. `track-only` or your chosen password for PM logins).
-   - Keep both feature flags `false` (`FEATURE_TWILIO_LIVE=false`, `FEATURE_ROOFR_WRITE=false`).
-3. Seed staff & initial lead data:
-   - Run `DATABASE_URL="..." npm run db:seed` locally against the hosted database once.
-4. Do not put live Twilio or Roofr write credentials in the project. They are not required to build.
-
-```bash
-npm run build   # runs prisma generate && prisma migrate deploy && next build
-```
-
-## Phase 2 gates (not this build)
-
-Do not turn these on until Ray says yes:
-
-- Live Twilio voice + SMS
-- LSA 5-minute SLA timers
-- Roofr opportunity create
-- Roofr / Google calendar write
-- Nurture drips / Outbound Desk / Appointment bot
-
-## Data model
-
-Prisma / PostgreSQL: `Lead`, `Activity`, `Appointment`, `OpportunityLink`, `AssignmentEvent`, `User`, plus `RoundRobinCursor` and `WebhookEvent`.
-
-Stages (exact): `capture` · `qualify` · `assign` · `contact` · `appointment_set` · `inspection` · `proposal` · `negotiate` · `won` · `lost_nurture`
-
-See `docs/STRUCTURE-v2.md` for the 2026-09-18 spec this build implements.
+The recovery release supersedes conflicting implementation descriptions in older Phase 1 docs. Draft team-invite and operating-system PRs require reconciliation before merging; do not merge them blindly over these access and routing changes.

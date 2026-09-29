@@ -4,8 +4,8 @@ import { featureFlags } from "@/lib/flags";
 
 const NAV = [
   { href: "/", label: "Board" },
+  { href: "/today", label: "Today" },
   { href: "/leads/new", label: "New lead" },
-  { href: "/import", label: "CSV import" },
   { href: "/calendar", label: "Calendar" },
   { href: "/admin/webhooks", label: "Webhooks" },
 ];
@@ -65,7 +65,7 @@ export function AppShell({
         </div>
         <div className="bg-copper px-4 py-1.5 text-center text-[12px] text-white">
           Phase 1 — <strong>track only</strong>. Twilio live: {flags.twilioLive ? "ON" : "OFF"}. Roofr write:{" "}
-          {flags.roofrWrite ? "ON" : "OFF"}. Calendar source of truth: Roofr (display only). Digests → Firstmate.
+          {flags.roofrWrite ? "ON" : "OFF"}. Book appointments in Roofr. Review Today each morning. No automatic digest.
         </div>
       </header>
       <nav className="flex gap-2 overflow-x-auto border-b border-line bg-card px-4 py-2 md:hidden">

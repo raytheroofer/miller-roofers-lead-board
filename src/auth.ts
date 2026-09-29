@@ -2,7 +2,7 @@ import NextAuth, { type DefaultSession } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
 import { timingSafeEqual } from "crypto";
-import { firstmateEmail, isAllowlistedEmail, staffFromEmail } from "@/lib/users";
+import { firstmateEmail, isAllowlistedEmail, ownerEmail, staffFromEmail } from "@/lib/users";
 
 declare module "next-auth" {
   interface Session {
@@ -20,14 +20,6 @@ declare module "next-auth" {
   }
 }
 
-declare module "@auth/core/jwt" {
-  interface JWT {
-    role?: string;
-    slug?: string;
-    inRrPool?: boolean;
-  }
-}
-
 function safeEqual(a: string, b: string): boolean {
   const left = Buffer.from(a);
   const right = Buffer.from(b);
@@ -36,6 +28,7 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 function passwordForEmail(email: string): string | undefined {
+  if (email === ownerEmail() && process.env.OWNER_PASSWORD) return process.env.OWNER_PASSWORD;
   if (email === firstmateEmail()) {
     return process.env.FIRSTMATE_PASSWORD || process.env.AUTH_PASSWORD;
   }
@@ -81,7 +74,7 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
   );
 }
 
-export const { handlers, auth, signIn, signOut } = NextAuth({
+const authConfig = NextAuth({
   trustHost: true,
   secret: process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET,
   session: { strategy: "jwt" },
@@ -120,8 +113,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.role = token.role ?? "pm";
-        session.user.slug = token.slug ?? "unknown";
+        session.user.role = typeof token.role === "string" ? token.role : "pm";
+        session.user.slug = typeof token.slug === "string" ? token.slug : "unknown";
         session.user.inRrPool = Boolean(token.inRrPool);
         session.user.email = token.email ?? session.user.email;
         session.user.name = token.name ?? session.user.name;
@@ -130,3 +123,16 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     },
   },
 });
+
+export const { handlers, signIn, signOut } = authConfig;
+
+// Recheck access on every read and mutation, including already-issued sessions.
+export async function auth() {
+  const session = await authConfig.auth();
+  if (!session?.user?.email || !isAllowlistedEmail(session.user.email)) return null;
+  const currentStaff = staffFromEmail(session.user.email);
+  session.user.role = currentStaff.role;
+  session.user.slug = currentStaff.slug;
+  session.user.inRrPool = currentStaff.inRrPool;
+  return session;
+}

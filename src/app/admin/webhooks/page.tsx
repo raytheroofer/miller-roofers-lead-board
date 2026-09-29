@@ -25,7 +25,7 @@ export default async function WebhookInboxPage() {
     >
       <h1 className="font-serif text-3xl">Webhook inbox</h1>
       <p className="mt-1 max-w-2xl text-sm text-muted">
-        Store-only stubs. POST to these URLs does not create leads, send SMS, or touch Roofr.
+        {process.env.FEATURE_WEBHOOK_INBOX === "true" && process.env.WEBHOOK_SECRET ? "Inbox enabled, store only." : "Inbound storage is disabled during recovery."} Historical payloads remain available. No automatic lead creation or outreach.
       </p>
 
       <div className="mt-4 flex flex-wrap gap-2 text-xs">
@@ -38,7 +38,7 @@ export default async function WebhookInboxPage() {
 
       {events.length === 0 ? (
         <Card className="mt-6 p-8 text-center text-sm text-muted">
-          No payloads yet. Send a test POST to any stub URL — it will land here and do nothing else.
+          No stored payloads. Check original intake channels and capture verified leads manually.
         </Card>
       ) : (
         <div className="mt-6 space-y-3">
