@@ -70,13 +70,13 @@ export default async function BoardPage({
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
-            href={toggleView("board", params)}
+            href={toggleView("board", { ...params, q: search })}
             className={`rounded-md px-3 py-2 text-sm ${view === "board" ? "bg-navy text-white" : "border border-line bg-card"}`}
           >
             Board
           </Link>
           <Link
-            href={toggleView("table", params)}
+            href={toggleView("table", { ...params, q: search })}
             className={`rounded-md px-3 py-2 text-sm ${view === "table" ? "bg-navy text-white" : "border border-line bg-card"}`}
           >
             Table
