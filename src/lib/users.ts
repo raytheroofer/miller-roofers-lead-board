@@ -61,6 +61,11 @@ export function isAllowlistedEmail(email: string): boolean {
 
 export function staffFromEmail(email: string) {
   const normalized = email.trim().toLowerCase();
+  if (normalized === ownerEmail()) {
+    const knownOwner = STAFF_DIRECTORY.find(person => person.email === normalized);
+    return { email: normalized, name: knownOwner?.name ?? "Owner", slug: knownOwner?.slug ?? "owner",
+      role: "owner" as const, inRrPool: knownOwner?.inRrPool ?? false };
+  }
   if (normalized === firstmateEmail()) {
     return {
       email: normalized,

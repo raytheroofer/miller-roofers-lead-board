@@ -1,3 +1,4 @@
+import { ActionForm } from "@/components/action-form";
 import {
   assignManualAction,
   assignRoundRobinAction,
@@ -18,7 +19,7 @@ import type { Lead } from "@prisma/client";
 
 export function LogCallForm({ leadId }: { leadId: string }) {
   return (
-    <form action={logActivityAction} className="space-y-3">
+    <ActionForm action={logActivityAction} className="space-y-3">
       <input type="hidden" name="leadId" value={leadId} />
       <input type="hidden" name="type" value="call" />
       <p className="text-sm text-muted">Human-entered. Live Twilio dial is OFF.</p>
@@ -48,13 +49,13 @@ export function LogCallForm({ leadId }: { leadId: string }) {
         <Field name="summary" placeholder="First call — storm claim, wants inspection" />
       </div>
       <Button type="submit">Log call</Button>
-    </form>
+    </ActionForm>
   );
 }
 
 export function LogSmsForm({ leadId }: { leadId: string }) {
   return (
-    <form action={logActivityAction} className="space-y-3">
+    <ActionForm action={logActivityAction} className="space-y-3">
       <input type="hidden" name="leadId" value={leadId} />
       <input type="hidden" name="type" value="sms" />
       <p className="text-sm text-muted">Human-entered. Mass SMS / Twilio send is OFF.</p>
@@ -82,7 +83,7 @@ export function LogSmsForm({ leadId }: { leadId: string }) {
         <Field name="summary" placeholder="Intro SMS logged" />
       </div>
       <Button type="submit">Log SMS</Button>
-    </form>
+    </ActionForm>
   );
 }
 
@@ -94,7 +95,7 @@ export function SetAppointmentForm({
   defaultAssignee: string | null;
 }) {
   return (
-    <form action={setAppointmentAction} className="space-y-3">
+    <ActionForm action={setAppointmentAction} className="space-y-3">
       <input type="hidden" name="leadId" value={leadId} />
       <p className="text-sm text-muted">
         Human-entered display only. Book the real slot in <strong>Roofr calendar</strong>, then paste the id.
@@ -126,7 +127,7 @@ export function SetAppointmentForm({
         <Area name="notes" rows={2} placeholder="Homeowner prefers afternoon, dog in yard" />
       </div>
       <Button type="submit">Set appointment</Button>
-    </form>
+    </ActionForm>
   );
 }
 
@@ -141,13 +142,13 @@ export function AssignPanel({
 }) {
   return (
     <div className="space-y-4">
-      {source === "remodel-favor" && !assignedPm && <form action={assignRoundRobinAction}>
+      {source === "remodel-favor" && !assignedPm && <ActionForm action={assignRoundRobinAction}>
         <input type="hidden" name="leadId" value={leadId} />
         <Button type="submit" variant="secondary" className="w-full">
           Round-robin assign (Ray → Austin → Cody)
         </Button>
-      </form>}
-      <form action={assignManualAction} className="space-y-2">
+      </ActionForm>}
+      <ActionForm action={assignManualAction} className="space-y-2">
         <input type="hidden" name="leadId" value={leadId} />
         <input type="hidden" name="reason" value={assignedPm ? "reassign" : "manual_override"} />
         <Label>Manual override</Label>
@@ -163,7 +164,7 @@ export function AssignPanel({
         <Button type="submit" variant="ghost" className="w-full">
           Assign selected PM
         </Button>
-      </form>
+      </ActionForm>
       <p className="text-xs text-muted">Round-robin applies only to unassigned Remodel Favor leads. Other sources are assigned manually. No automatic notification.</p>
     </div>
   );
@@ -180,7 +181,7 @@ export function StageForm({
 }) {
   const options = STAGES.filter((next) => canTransition(stage, next, { allowBackward }));
   return (
-    <form action={updateStageAction} className="flex flex-col gap-2 sm:flex-row sm:items-end">
+    <ActionForm action={updateStageAction} className="flex flex-col gap-2 sm:flex-row sm:items-end">
       <input type="hidden" name="leadId" value={leadId} />
       <div className="flex-1">
         <Label>Move stage</Label>
@@ -197,14 +198,14 @@ export function StageForm({
         <Field name="reasonCode" placeholder="price / not_insured / competitor" />
       </div>
       <Button type="submit">Update stage</Button>
-    </form>
+    </ActionForm>
   );
 }
 
 export function LeadDetailsForm({ lead }: { lead: Lead }) {
   const phone = parseJsonArray(lead.phones)[0] ?? "";
   return (
-    <form action={updateLeadDetailsAction} className="grid gap-3 sm:grid-cols-2">
+    <ActionForm action={updateLeadDetailsAction} className="grid gap-3 sm:grid-cols-2">
       <input type="hidden" name="leadId" value={lead.id} />
       <div>
         <Label>Name</Label>
@@ -258,7 +259,7 @@ export function LeadDetailsForm({ lead }: { lead: Lead }) {
           Save lead details
         </Button>
       </div>
-    </form>
+    </ActionForm>
   );
 }
 
@@ -274,7 +275,7 @@ export function OpportunityForm({
   companycamRef?: string | null;
 }) {
   return (
-    <form action={updateOpportunityAction} className="space-y-3">
+    <ActionForm action={updateOpportunityAction} className="space-y-3">
       <input type="hidden" name="leadId" value={leadId} />
       <p className="text-sm text-muted">Read-only Roofr link. We do not create the opportunity from this app.</p>
       <div>
@@ -292,13 +293,13 @@ export function OpportunityForm({
       <Button type="submit" variant="ghost">
         Save links
       </Button>
-    </form>
+    </ActionForm>
   );
 }
 
 export function NewLeadForm() {
   return (
-    <form action={createLeadAction} className="grid gap-3 sm:grid-cols-2">
+    <ActionForm action={createLeadAction} className="grid gap-3 sm:grid-cols-2">
       <div className="sm:col-span-2">
         <Label>Homeowner</Label>
         <Field name="name" required placeholder="James Whitaker" />
@@ -359,6 +360,6 @@ export function NewLeadForm() {
       <div className="sm:col-span-2">
         <Button type="submit">Capture lead</Button>
       </div>
-    </form>
+    </ActionForm>
   );
 }

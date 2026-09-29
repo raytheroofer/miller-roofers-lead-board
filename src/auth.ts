@@ -130,5 +130,9 @@ export const { handlers, signIn, signOut } = authConfig;
 export async function auth() {
   const session = await authConfig.auth();
   if (!session?.user?.email || !isAllowlistedEmail(session.user.email)) return null;
+  const currentStaff = staffFromEmail(session.user.email);
+  session.user.role = currentStaff.role;
+  session.user.slug = currentStaff.slug;
+  session.user.inRrPool = currentStaff.inRrPool;
   return session;
 }

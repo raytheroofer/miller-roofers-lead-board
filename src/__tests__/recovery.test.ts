@@ -1,12 +1,16 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { parseEasternInput, easternInput } from "@/lib/eastern-time";
 import { isDemoLead } from "@/lib/demo-data";
-import { allowedEmails, isAllowlistedEmail } from "@/lib/users";
+import { allowedEmails, isAllowlistedEmail, staffFromEmail } from "@/lib/users";
 import { safeWebhookHeaders, validWebhookSecret } from "@/lib/webhook-security";
 
 afterEach(() => vi.unstubAllEnvs());
 
 describe("owner recovery boundaries", () => {
+  it.each(["owner@example.test", "austin@mrsroofers.com"])("gives the configured owner %s the owner role", email => {
+    vi.stubEnv("OWNER_EMAIL", email);
+    expect(staffFromEmail(email).role).toBe("owner");
+  });
   it("denies implicit staff and Firstmate even when the old allowlist is set", () => {
     vi.stubEnv("OWNER_ONLY", "true"); vi.stubEnv("OWNER_EMAIL", "ray@mrsroofers.com");
     vi.stubEnv("ALLOWED_EMAILS", "ray@mrsroofers.com,austin@mrsroofers.com");

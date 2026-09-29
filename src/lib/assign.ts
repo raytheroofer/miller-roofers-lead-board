@@ -1,3 +1,4 @@
+import { InputError } from "@/lib/input-error";
 import { assertAssignablePm, nextRoundRobin, type RrPm } from "@/lib/rr";
 import { canTransition } from "@/lib/stages";
 import { serialTransaction } from "@/lib/transaction";
@@ -9,9 +10,9 @@ export async function assignRoundRobin(options: {
   return serialTransaction(async (tx) => {
     const lead = await tx.lead.findUnique({ where: { id: options.leadId } });
   if (!lead) {
-    throw new Error("Lead not found");
+    throw new InputError("Lead not found");
   }
-  if (lead.source !== "remodel-favor") throw new Error("Round-robin is only for Remodel Favor leads. Use manual assignment for this source.");
+  if (lead.source !== "remodel-favor") throw new InputError("Round-robin is only for Remodel Favor leads. Use manual assignment for this source.");
   if (lead.assignedPm) return { lead, assignedPm: lead.assignedPm, nextIndex: null };
 
     const cursor = await tx.roundRobinCursor.upsert({
@@ -69,11 +70,11 @@ export async function assignManual(options: {
   reasonNote: string;
 }) {
   assertAssignablePm(options.toPm);
-  if (!options.reasonNote?.trim()) throw new Error("Explain the assignment or reassignment.");
+  if (!options.reasonNote?.trim()) throw new InputError("Explain the assignment or reassignment.");
   return serialTransaction(async (tx) => {
     const lead = await tx.lead.findUnique({ where: { id: options.leadId } });
   if (!lead) {
-    throw new Error("Lead not found");
+    throw new InputError("Lead not found");
   }
 
     const updated = await tx.lead.update({

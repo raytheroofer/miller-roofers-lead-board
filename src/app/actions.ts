@@ -11,13 +11,15 @@ import { isRrPm } from "@/lib/rr";
 import { canTransition } from "@/lib/stages";
 import { parseEasternInput } from "@/lib/eastern-time";
 import { serialTransaction } from "@/lib/transaction";
+import { InputError, runFormAction } from "@/lib/input-error";
 
 export async function createLeadAction(formData: FormData) {
+  return runFormAction(async () => {
   const actor = await actorFromSession();
   const name = String(formData.get("name") ?? "").trim();
   const source = String(formData.get("source") ?? "other");
-  if (!name) throw new Error("Name is required");
-  if (!isLeadSource(source)) throw new Error("Invalid source");
+  if (!name) throw new InputError("Name is required");
+  if (!isLeadSource(source)) throw new InputError("Invalid source");
 
   const phone = String(formData.get("phone") ?? "").trim();
   const lead = await prisma.lead.create({
@@ -38,22 +40,24 @@ export async function createLeadAction(formData: FormData) {
   });
 
   redirect(`/leads/${lead.id}`);
+  });
 }
 
 export async function updateStageAction(formData: FormData) {
+  return runFormAction(async () => {
   const actor = await actorFromSession();
   const id = String(formData.get("leadId") ?? "");
   const stage = String(formData.get("stage") ?? "");
-  if (!isStage(stage)) throw new Error("Invalid stage");
+  if (!isStage(stage)) throw new InputError("Invalid stage");
   await serialTransaction(async tx => {
     const lead = await tx.lead.findUniqueOrThrow({ where: { id }, include: { opportunity: true } });
     assertTransition(lead.stage, stage, { allowBackward: actor.allowBackward });
-    if (stage === "won" && !lead.opportunity?.roofrId) throw new Error("Link the Roofr job before marking this lead won.");
+    if (stage === "won" && !lead.opportunity?.roofrId) throw new InputError("Link the Roofr job before marking this lead won.");
     if (stage === "appointment_set" && !await tx.appointment.findFirst({ where: { leadId: id, roofrCalendarId: { not: null } } })) {
-      throw new Error("Log the confirmed Roofr appointment first.");
+      throw new InputError("Log the confirmed Roofr appointment first.");
     }
     const reasonCode = String(formData.get("reasonCode") ?? "").trim() || lead.reasonCode;
-    if (stage === "lost_nurture" && !reasonCode) throw new Error("Record the lost or nurture reason.");
+    if (stage === "lost_nurture" && !reasonCode) throw new InputError("Record the lost or nurture reason.");
     await tx.lead.update({ where: { id }, data: { stage,
       result: stage === "won" ? "won" : stage === "lost_nurture" ? "lost" : null, reasonCode,
       ...(["won", "lost_nurture"].includes(stage) ? { nextActionAt: null } : {}) } });
@@ -61,13 +65,15 @@ export async function updateStageAction(formData: FormData) {
       outcome: stage, summary: `Stage ${lead.stage} → ${stage}` } });
   });
   revalidatePath("/"); revalidatePath("/today"); revalidatePath(`/leads/${id}`);
+  });
 }
 
 export async function logActivityAction(formData: FormData) {
+  return runFormAction(async () => {
   const actor = await actorFromSession();
   const id = String(formData.get("leadId") ?? "");
   const type = String(formData.get("type") ?? "note");
-  if (!["call", "sms", "email", "note"].includes(type)) throw new Error("Invalid activity type");
+  if (!["call", "sms", "email", "note"].includes(type)) throw new InputError("Invalid activity type");
   await serialTransaction(async tx => {
     const lead = await tx.lead.findUniqueOrThrow({ where: { id } });
     await tx.activity.create({ data: { leadId: id, type,
@@ -79,18 +85,20 @@ export async function logActivityAction(formData: FormData) {
     }
   });
   revalidatePath(`/leads/${id}`); revalidatePath("/"); revalidatePath("/today");
+  });
 }
 
 export async function setAppointmentAction(formData: FormData) {
+  return runFormAction(async () => {
   const actor = await actorFromSession();
   const id = String(formData.get("leadId") ?? "");
   const roofrCalendarId = String(formData.get("roofrCalendarId") ?? "").trim();
-  if (!roofrCalendarId) throw new Error("Book in Roofr first and enter the confirmed appointment reference.");
+  if (!roofrCalendarId) throw new InputError("Book in Roofr first and enter the confirmed appointment reference.");
   const startsAt = parseEasternInput(String(formData.get("startsAt") ?? ""));
   const endsAt = formData.get("endsAt") ? parseEasternInput(String(formData.get("endsAt"))) : null;
-  if (endsAt && endsAt <= startsAt) throw new Error("End time must follow the start time.");
+  if (endsAt && endsAt <= startsAt) throw new InputError("End time must follow the start time.");
   const assignee = String(formData.get("assignee") ?? "");
-  if (!isRrPm(assignee)) throw new Error("Choose an assigned PM.");
+  if (!isRrPm(assignee)) throw new InputError("Choose an assigned PM.");
   await serialTransaction(async tx => {
     const lead = await tx.lead.findUniqueOrThrow({ where: { id } });
     const existing = await tx.appointment.findFirst({ where: { leadId: id, roofrCalendarId } });
@@ -110,17 +118,21 @@ export async function setAppointmentAction(formData: FormData) {
       fromPm: lead.assignedPm, toPm: assignee, reason: "confirmed_appointment_owner", actor: actor.name } });
   });
   revalidatePath(`/leads/${id}`); revalidatePath("/"); revalidatePath("/today"); revalidatePath("/calendar");
+  });
 }
 
 export async function assignRoundRobinAction(formData: FormData) {
+  return runFormAction(async () => {
   const actor = await actorFromSession();
   const id = String(formData.get("leadId") ?? "");
   await assignRoundRobin({ leadId: id, actorName: actor.name });
   revalidatePath(`/leads/${id}`);
   revalidatePath("/");
+  });
 }
 
 export async function assignManualAction(formData: FormData) {
+  return runFormAction(async () => {
   const actor = await actorFromSession();
   const id = String(formData.get("leadId") ?? "");
   const toPm = String(formData.get("toPm") ?? "");
@@ -133,6 +145,7 @@ export async function assignManualAction(formData: FormData) {
   });
   revalidatePath(`/leads/${id}`);
   revalidatePath("/");
+  });
 }
 
 function leadReason(value: FormDataEntryValue | null): "manual_override" | "reassign" {
@@ -140,17 +153,19 @@ function leadReason(value: FormDataEntryValue | null): "manual_override" | "reas
 }
 
 export async function updateOpportunityAction(formData: FormData) {
+  return runFormAction(async () => {
   const actor = await actorFromSession();
   const id = String(formData.get("leadId") ?? "");
   const roofrId = String(formData.get("roofrId") ?? "").trim() || null;
   const companycamRef = String(formData.get("companycamRef") ?? "").trim() || null;
-  if (roofrId && !/^\d+$/.test(roofrId)) throw new Error("Use the numeric Roofr job number.");
   if (companycamRef && !/^https:\/\/app\.companycam\.com\/projects\/\d+\/?$/.test(companycamRef)) {
-    throw new Error("Use the CompanyCam project URL from app.companycam.com/projects/…");
+    throw new InputError("Use the CompanyCam project URL from app.companycam.com/projects/…");
   }
   await serialTransaction(async tx => {
+    const previous = await tx.opportunityLink.findUnique({ where: { leadId: id } });
+    if (roofrId && !/^\d+$/.test(roofrId) && roofrId !== previous?.roofrId) throw new InputError("Use the numeric Roofr job number when changing the job link.");
     if (roofrId && await tx.opportunityLink.findFirst({ where: { roofrId, leadId: { not: id } } })) {
-      throw new Error("That Roofr job is already linked to another lead. Review the existing record first.");
+      throw new InputError("That Roofr job is already linked to another lead. Review the existing record first.");
     }
     await tx.opportunityLink.upsert({ where: { leadId: id },
       create: { leadId: id, roofrId, companycamRef }, update: { roofrId, companycamRef } });
@@ -158,9 +173,11 @@ export async function updateOpportunityAction(formData: FormData) {
       summary: "Job links verified and updated manually", body: `Roofr: ${roofrId ?? "none"}; CompanyCam: ${companycamRef ?? "none"}` } });
   });
   revalidatePath(`/leads/${id}`); revalidatePath("/today");
+  });
 }
 
 export async function updateLeadDetailsAction(formData: FormData) {
+  return runFormAction(async () => {
   await actorFromSession();
   const id = String(formData.get("leadId") ?? "");
   const phone = String(formData.get("phone") ?? "").trim();
@@ -181,4 +198,5 @@ export async function updateLeadDetailsAction(formData: FormData) {
   });
   revalidatePath(`/leads/${id}`);
   revalidatePath("/");
+  });
 }

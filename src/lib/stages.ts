@@ -1,3 +1,4 @@
+import { InputError } from "@/lib/input-error";
 export const STAGES = [
   "capture",
   "qualify",
@@ -89,7 +90,7 @@ export function assertTransition(
   options: { allowBackward?: boolean } = {},
 ): asserts to is Stage {
   if (!canTransition(from, to, options)) {
-    throw new Error(`Illegal stage transition: ${from} → ${to}`);
+    throw new InputError(`Illegal stage transition: ${from} → ${to}`);
   }
 }
 
