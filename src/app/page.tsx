@@ -6,7 +6,7 @@ import { AppShell } from "@/components/app-shell";
 import { LeadBoard } from "@/components/lead-board";
 import { isLeadSource, LEAD_SOURCES, SOURCE_LABELS } from "@/lib/sources";
 import { isStage, STAGES, STAGE_LABELS } from "@/lib/stages";
-import { isRrPm, RR_POOL, RR_POOL_LABELS } from "@/lib/rr";
+import { isReadablePm, RR_POOL, RR_POOL_LABELS } from "@/lib/rr";
 import { isDemoLead } from "@/lib/demo-data";
 import { matchesLeadSearch } from "@/lib/lead-search";
 
@@ -22,7 +22,7 @@ export default async function BoardPage({
   const params = await searchParams;
   const view = params.view === "table" ? "table" : "board";
   const stage = params.stage && isStage(params.stage) ? params.stage : undefined;
-  const pm = params.pm === "austin" || params.pm === "unassigned" || (params.pm && isRrPm(params.pm)) ? params.pm : undefined;
+  const pm = params.pm === "unassigned" || (params.pm && isReadablePm(params.pm)) ? params.pm : undefined;
   const source = params.source && isLeadSource(params.source) ? params.source : undefined;
   const search = typeof params.q === "string" ? params.q.trim().slice(0, 200) : "";
 
@@ -62,7 +62,7 @@ export default async function BoardPage({
     >
       <div className="mb-5 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-bronze">Miller Roofing Solutions</p>
+          <p className="mb-2 text-xs font-semibold uppercase tracking-[0.18em] text-navy">Miller Roofing Solutions</p>
           <h1 className="font-semibold tracking-tight text-3xl text-navy">Lead board</h1>
           <p className="mt-1 text-sm text-muted">
             {leads.length} {showDemo ? "demo / test records" : "working leads"} · Manual updates · Round-robin: Remodel Favor only

@@ -2,7 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isLeadSource } from "@/lib/sources";
 import { isStage } from "@/lib/stages";
-import { isRrPm } from "@/lib/rr";
+import { isReadablePm } from "@/lib/rr";
 
 export const dynamic = "force-dynamic";
 
@@ -20,7 +20,7 @@ export async function GET(request: Request) {
   const leads = await prisma.lead.findMany({
     where: {
       stage: stage && isStage(stage) ? stage : undefined,
-      assignedPm: pm === "unassigned" ? null : pm && isRrPm(pm) ? pm : undefined,
+      assignedPm: pm === "unassigned" ? null : pm && isReadablePm(pm) ? pm : undefined,
       source: source && isLeadSource(source) ? source : undefined,
     },
     include: {
