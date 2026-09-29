@@ -12,6 +12,7 @@ import { canTransition } from "@/lib/stages";
 import { parseEasternInput } from "@/lib/eastern-time";
 import { serialTransaction } from "@/lib/transaction";
 import { InputError, runFormAction } from "@/lib/input-error";
+import { isCurrentConfirmedAppointment } from "@/lib/appointment";
 
 export async function createLeadAction(formData: FormData) {
   return runFormAction(async () => {
@@ -53,8 +54,11 @@ export async function updateStageAction(formData: FormData) {
     const lead = await tx.lead.findUniqueOrThrow({ where: { id }, include: { opportunity: true } });
     assertTransition(lead.stage, stage, { allowBackward: actor.allowBackward });
     if (stage === "won" && !lead.opportunity?.roofrId) throw new InputError("Link the Roofr job before marking this lead won.");
-    if (stage === "appointment_set" && !await tx.appointment.findFirst({ where: { leadId: id, roofrCalendarId: { not: null } } })) {
-      throw new InputError("Log the confirmed Roofr appointment first.");
+    if (stage === "appointment_set") {
+      const appointments = await tx.appointment.findMany({ where: { leadId: id } });
+      if (!appointments.some(appointment => isCurrentConfirmedAppointment(appointment))) {
+        throw new InputError("Log a current or upcoming confirmed Roofr appointment first.");
+      }
     }
     const reasonCode = String(formData.get("reasonCode") ?? "").trim() || lead.reasonCode;
     if (stage === "lost_nurture" && !reasonCode) throw new InputError("Record the lost or nurture reason.");
@@ -97,13 +101,16 @@ export async function setAppointmentAction(formData: FormData) {
   const startsAt = parseEasternInput(String(formData.get("startsAt") ?? ""));
   const endsAt = formData.get("endsAt") ? parseEasternInput(String(formData.get("endsAt"))) : null;
   if (endsAt && endsAt <= startsAt) throw new InputError("End time must follow the start time.");
+  if (!isCurrentConfirmedAppointment({ status: "set", roofrCalendarId, startsAt, endsAt })) {
+    throw new InputError("Use a current or upcoming confirmed Roofr appointment. Keep historical appointments in Roofr.");
+  }
   const assignee = String(formData.get("assignee") ?? "");
   if (!isRrPm(assignee)) throw new InputError("Choose an assigned PM.");
   await serialTransaction(async tx => {
     const lead = await tx.lead.findUniqueOrThrow({ where: { id } });
     const existing = await tx.appointment.findFirst({ where: { leadId: id, roofrCalendarId } });
     const notes = String(formData.get("notes") ?? "") || null;
-    if (existing && existing.startsAt.getTime() === startsAt.getTime() && existing.endsAt?.getTime() === endsAt?.getTime() && existing.assignee === assignee && existing.notes === notes) return;
+    if (existing && existing.status === "set" && existing.startsAt.getTime() === startsAt.getTime() && existing.endsAt?.getTime() === endsAt?.getTime() && existing.assignee === assignee && existing.notes === notes) return;
     const appointmentData = { startsAt, endsAt, assignee, roofrCalendarId, status: "set", notes };
     if (existing) await tx.appointment.update({ where: { id: existing.id }, data: appointmentData });
     else await tx.appointment.create({ data: { leadId: id, ...appointmentData } });

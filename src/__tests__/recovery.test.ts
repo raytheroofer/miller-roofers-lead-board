@@ -7,6 +7,12 @@ import { safeWebhookHeaders, validWebhookSecret } from "@/lib/webhook-security";
 afterEach(() => vi.unstubAllEnvs());
 
 describe("owner recovery boundaries", () => {
+  it("keeps a custom owner admitted when team access is deliberately enabled", () => {
+    vi.stubEnv("OWNER_ONLY", "false"); vi.stubEnv("OWNER_EMAIL", "owner@example.test");
+    vi.stubEnv("ALLOWED_EMAILS", "austin@mrsroofers.com");
+    expect(isAllowlistedEmail("owner@example.test")).toBe(true);
+    expect(isAllowlistedEmail("austin@mrsroofers.com")).toBe(true);
+  });
   it.each(["owner@example.test", "austin@mrsroofers.com"])("gives the configured owner %s the owner role", email => {
     vi.stubEnv("OWNER_EMAIL", email);
     expect(staffFromEmail(email).role).toBe("owner");
