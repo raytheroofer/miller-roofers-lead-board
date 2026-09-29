@@ -174,7 +174,7 @@ export async function updateOpportunityAction(formData: FormData) {
   }
   await serialTransaction(async tx => {
     const previous = await tx.opportunityLink.findUnique({ where: { leadId: id } });
-    if (roofrId && !/^\d+$/.test(roofrId) && roofrId !== previous?.roofrId) throw new InputError("Use the numeric Roofr job number when changing the job link.");
+    if (roofrId && !/^\d+(?:-\d+)*$/.test(roofrId) && roofrId !== previous?.roofrId) throw new InputError("Copy the Roofr job ID exactly: digits, with hyphens if shown in Roofr.");
     if (roofrId && await tx.opportunityLink.findFirst({ where: { roofrId, leadId: { not: id } } })) {
       throw new InputError("That Roofr job is already linked to another lead. Review the existing record first.");
     }

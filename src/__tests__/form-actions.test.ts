@@ -20,11 +20,28 @@ describe("action feedback and existing records", () => {
     expect(result).toBeUndefined(); expect(tx.opportunityLink.upsert).toHaveBeenCalledOnce();
     expect(tx.opportunityLink.upsert.mock.calls[0][0].update).not.toHaveProperty("mrsJobId");
   });
-  it("returns a readable validation error when entering a new nonnumeric job ID", async () => {
+  it.each(["MRS-NEW", "01012026--001", "01012026 001"])("rejects a new invented or malformed job ID (%s)", async roofrId => {
     tx.opportunityLink.findUnique.mockResolvedValue({ roofrId: "123" });
-    const result = await updateOpportunityAction(form({ leadId: "x", roofrId: "MRS-NEW" }));
-    expect(result).toEqual({ error: "Use the numeric Roofr job number when changing the job link." });
+    const result = await updateOpportunityAction(form({ leadId: "x", roofrId }));
+    expect(result).toEqual({ error: "Copy the Roofr job ID exactly: digits, with hyphens if shown in Roofr." });
     expect(tx.opportunityLink.upsert).not.toHaveBeenCalled();
+  });
+  it("preserves leading zeros and hyphens when linking a current Roofr job", async () => {
+    tx.opportunityLink.findUnique.mockResolvedValue(null);
+    tx.opportunityLink.findFirst.mockResolvedValue(null);
+    expect(await updateOpportunityAction(form({ leadId: "x", roofrId: " 01012026-001 " }))).toBeUndefined();
+    expect(tx.opportunityLink.upsert).toHaveBeenCalledWith({ where: { leadId: "x" },
+      create: { leadId: "x", roofrId: "01012026-001", companycamRef: null },
+      update: { roofrId: "01012026-001", companycamRef: null } });
+    expect(tx.activity.create.mock.calls[0][0].data.body).toContain("01012026-001");
+  });
+  it("does not link a date-prefixed Roofr job that is already linked to another lead", async () => {
+    tx.opportunityLink.findUnique.mockResolvedValue(null);
+    tx.opportunityLink.findFirst.mockResolvedValue({ leadId: "other" });
+    expect(await updateOpportunityAction(form({ leadId: "x", roofrId: "01012026-001" })))
+      .toEqual({ error: "That Roofr job is already linked to another lead. Review the existing record first." });
+    expect(tx.opportunityLink.upsert).not.toHaveBeenCalled();
+    expect(tx.activity.create).not.toHaveBeenCalled();
   });
   it("explains why a lead cannot be marked won", async () => {
     tx.lead.findUniqueOrThrow.mockResolvedValue({ stage: "proposal", opportunity: null });
