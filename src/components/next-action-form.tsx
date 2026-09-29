@@ -13,6 +13,7 @@ export function NextActionForm({ leadId, summary, due, dueIso, assignedPm, versi
   return <div className="space-y-4">
     <form action={action} className="space-y-3">
       <input type="hidden" name="leadId" value={leadId} />
+      <input type="hidden" name="expectedVersion" value={version} />
       <Label htmlFor="next-summary">Next action</Label>
       <Field id="next-summary" name="summary" required maxLength={500} defaultValue={summary} placeholder="Confirm inspection time with homeowner" />
       <Label htmlFor="next-due">Due — Eastern Time</Label>
@@ -21,6 +22,8 @@ export function NextActionForm({ leadId, summary, due, dueIso, assignedPm, versi
       <Select id="next-owner" name="assignedPm" defaultValue={assignedPm ?? "raymond"}>
         {RR_POOL.map(pm => <option key={pm} value={pm}>{RR_POOL_LABELS[pm]}</option>)}
       </Select>
+      <Label htmlFor="assignment-reason">Reason if setting or changing owner</Label>
+      <Field id="assignment-reason" name="assignmentReason" maxLength={500} required={!assignedPm} placeholder="Why this person?" />
       <Button disabled={pending} type="submit">{pending ? "Saving…" : "Save next action"}</Button>
       <p role="status" className={state.error ? "text-red-800 text-sm" : "text-sm"}>{state.error ?? state.message}</p>
     </form>

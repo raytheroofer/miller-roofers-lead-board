@@ -55,7 +55,8 @@ export async function updateStageAction(formData: FormData) {
     const reasonCode = String(formData.get("reasonCode") ?? "").trim() || lead.reasonCode;
     if (stage === "lost_nurture" && !reasonCode) throw new Error("Record the lost or nurture reason.");
     await tx.lead.update({ where: { id }, data: { stage,
-      result: stage === "won" ? "won" : stage === "lost_nurture" ? "lost" : null, reasonCode } });
+      result: stage === "won" ? "won" : stage === "lost_nurture" ? "lost" : null, reasonCode,
+      ...(["won", "lost_nurture"].includes(stage) ? { nextActionAt: null } : {}) } });
     await tx.activity.create({ data: { leadId: id, type: "stage", actor: "human", actorName: actor.name,
       outcome: stage, summary: `Stage ${lead.stage} → ${stage}` } });
   });
@@ -93,15 +94,17 @@ export async function setAppointmentAction(formData: FormData) {
   await serialTransaction(async tx => {
     const lead = await tx.lead.findUniqueOrThrow({ where: { id } });
     const existing = await tx.appointment.findFirst({ where: { leadId: id, roofrCalendarId } });
-    if (existing) return;
-    await tx.appointment.create({ data: { leadId: id, startsAt, endsAt, assignee, roofrCalendarId,
-      status: "set", notes: String(formData.get("notes") ?? "") || null } });
+    const notes = String(formData.get("notes") ?? "") || null;
+    if (existing && existing.startsAt.getTime() === startsAt.getTime() && existing.endsAt?.getTime() === endsAt?.getTime() && existing.assignee === assignee && existing.notes === notes) return;
+    const appointmentData = { startsAt, endsAt, assignee, roofrCalendarId, status: "set", notes };
+    if (existing) await tx.appointment.update({ where: { id: existing.id }, data: appointmentData });
+    else await tx.appointment.create({ data: { leadId: id, ...appointmentData } });
     await tx.lead.update({ where: { id }, data: {
       assignedPm: assignee, nextActionAt: startsAt,
       stage: canTransition(lead.stage, "appointment_set") ? "appointment_set" : lead.stage,
     } });
     await tx.activity.create({ data: { leadId: id, type: "next_action", actor: "human", actorName: actor.name,
-      outcome: "appointment_set", summary: "Attend the confirmed Roofr appointment",
+      outcome: existing ? "appointment_updated" : "appointment_set", summary: "Attend the confirmed Roofr appointment",
       body: `Roofr reference: ${roofrCalendarId}; starts ${startsAt.toISOString()}; owner ${assignee}` } });
     if (lead.assignedPm !== assignee) await tx.assignmentEvent.create({ data: { leadId: id,
       fromPm: lead.assignedPm, toPm: assignee, reason: "confirmed_appointment_owner", actor: actor.name } });

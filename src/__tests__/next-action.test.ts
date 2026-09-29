@@ -12,8 +12,8 @@ describe("owner action workflow", () => {
     expect(result.error).toBeTruthy(); expect(tx.lead.update).not.toHaveBeenCalled();
   });
   it("saves the Eastern due time, owner and historical action together", async () => {
-    tx.lead.findUniqueOrThrow.mockResolvedValue({ assignedPm: null });
-    const result = await saveNextAction({}, form({ leadId: "x", summary: "Call back", assignedPm: "raymond", due: "2026-09-30T08:00" }));
+    tx.lead.findUniqueOrThrow.mockResolvedValue({ assignedPm: null, updatedAt: new Date("2026-09-29T10:00:00Z") });
+    const result = await saveNextAction({}, form({ leadId: "x", summary: "Call back", assignedPm: "raymond", due: "2026-09-30T08:00", expectedVersion: "2026-09-29T10:00:00.000Z", assignmentReason: "Owner handling the pilot" }));
     expect(result.message).toMatch(/saved/);
     expect(tx.lead.update).toHaveBeenCalledWith({ where: { id: "x" }, data: { assignedPm: "raymond", nextActionAt: new Date("2026-09-30T12:00:00Z") } });
     expect(tx.activity.create).toHaveBeenCalledOnce(); expect(tx.assignmentEvent.create).toHaveBeenCalledOnce();
@@ -22,6 +22,16 @@ describe("owner action workflow", () => {
     tx.lead.findUniqueOrThrow.mockResolvedValue({ nextActionAt: new Date("2026-09-30T12:00:00Z"), updatedAt: new Date("2026-09-29T10:01:00Z") });
     const result = await completeNextAction({}, form({ leadId: "x", result: "Done", expectedDue: "2026-09-30T12:00:00.000Z", expectedVersion: "2026-09-29T10:00:00.000Z" }));
     expect(result.error).toMatch(/changed/); expect(tx.lead.update).not.toHaveBeenCalled();
+  });
+  it("rejects overwriting an action from an older tab", async () => {
+    tx.lead.findUniqueOrThrow.mockResolvedValue({ assignedPm: "raymond", updatedAt: new Date("2026-09-29T10:01:00Z") });
+    const result = await saveNextAction({}, form({ leadId: "x", summary: "Old action", assignedPm: "raymond", due: "2026-09-30T08:00", expectedVersion: "2026-09-29T10:00:00.000Z" }));
+    expect(result.error).toMatch(/changed/); expect(tx.lead.update).not.toHaveBeenCalled();
+  });
+  it("requires a reason when using the action form to reassign a lead", async () => {
+    tx.lead.findUniqueOrThrow.mockResolvedValue({ assignedPm: "austin", updatedAt: new Date("2026-09-29T10:00:00Z") });
+    const result = await saveNextAction({}, form({ leadId: "x", summary: "New action", assignedPm: "raymond", due: "2026-09-30T08:00", expectedVersion: "2026-09-29T10:00:00.000Z" }));
+    expect(result.error).toMatch(/Explain/); expect(tx.lead.update).not.toHaveBeenCalled();
   });
   it("records completion once and clears the active due time", async () => {
     const version = "2026-09-29T10:00:00.000Z", due = "2026-09-30T12:00:00.000Z";

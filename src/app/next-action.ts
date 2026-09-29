@@ -12,22 +12,27 @@ export async function saveNextAction(_previous: NextActionState, form: FormData)
   const actor = await actorFromSession();
   const leadId = String(form.get("leadId") ?? "");
   const summary = String(form.get("summary") ?? "").trim();
+  const expectedVersion = String(form.get("expectedVersion") ?? "");
+  const assignmentReason = String(form.get("assignmentReason") ?? "").trim();
   const assignedPm = String(form.get("assignedPm") ?? "");
   if (!summary || summary.length > 500) return { error: "Enter a next action of 1–500 characters." };
   if (!isRrPm(assignedPm)) return { error: "Choose an owner for the action." };
   let due: Date;
   try { due = parseEasternInput(String(form.get("due") ?? "")); }
   catch (error) { return { error: (error as Error).message }; }
-  await serialTransaction(async tx => {
+  const error = await serialTransaction(async tx => {
     const lead = await tx.lead.findUniqueOrThrow({ where: { id: leadId } });
+    if (lead.updatedAt.toISOString() !== expectedVersion) return "This record changed. Reload before saving the next action.";
+    if (lead.assignedPm !== assignedPm && !assignmentReason) return "Explain why you are setting or changing the action owner.";
     await tx.lead.update({ where: { id: leadId }, data: { nextActionAt: due, assignedPm } });
     await tx.activity.create({ data: { leadId, type: "next_action", actor: "human", actorName: actor.name,
-      summary, body: `Due ${due.toISOString()}; owner ${assignedPm}`, outcome: "scheduled" } });
+      summary, body: `Due ${due.toISOString()}; owner ${assignedPm}${assignmentReason ? `; assignment reason: ${assignmentReason}` : ""}`, outcome: "scheduled" } });
     if (lead.assignedPm !== assignedPm) {
       await tx.assignmentEvent.create({ data: { leadId, fromPm: lead.assignedPm, toPm: assignedPm,
         reason: "next_action_owner", actor: actor.name } });
     }
   });
+  if (error) return { error };
   revalidatePath("/today"); revalidatePath("/"); revalidatePath(`/leads/${leadId}`);
   return { message: "Next action saved. Due time is shown in Eastern Time." };
 }

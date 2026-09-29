@@ -15,7 +15,7 @@ export default async function TodayPage() {
   if (!session?.user) redirect("/login");
   const now = new Date();
   const records = await prisma.lead.findMany({
-    where: { stage: { notIn: ["won", "lost_nurture"] } },
+    where: { stage: { not: "won" }, OR: [{ stage: { not: "lost_nurture" } }, { nextActionAt: { not: null } }] },
     include: { opportunity: true, activities: { where: { type: "next_action" }, orderBy: { occurredAt: "desc" }, take: 1 } },
     orderBy: [{ nextActionAt: "asc" }, { createdAt: "asc" }],
   });
