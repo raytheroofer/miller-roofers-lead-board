@@ -69,9 +69,9 @@ export function Button({
 }) {
   const styles = {
     primary: "bg-navy text-white hover:bg-navy-2",
-    secondary: "bg-copper text-white hover:bg-[#9a4320]",
-    ghost: "bg-white text-ink border border-line hover:bg-[#f7f1e7]",
-    danger: "bg-[#7a2e24] text-white hover:bg-[#5f221c]",
+    secondary: "bg-gold text-ink hover:bg-gold-dark hover:text-white",
+    ghost: "bg-white text-ink border border-line hover:bg-paper",
+    danger: "bg-[#9b1c2e] text-white hover:bg-[#7f1625]",
   } as const;
 
   return (

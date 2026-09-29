@@ -1,18 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --paper: #f3eee4;
-  --ink: #1c1914;
-  --muted: #5c564c;
-  --line: #d8cfc0;
-  --card: #fffdf8;
-  --navy: #1a2332;
-  --navy-2: #243044;
-  --copper: #b4532a;
-  --copper-soft: #f3ddd2;
-  --ok: #2f6b4f;
-  --warn: #9a6b12;
-  --lost: #6b6258;
+  /* Matches mrsroofers.com: teal, gold, ink, paper. */
+  --paper: #f7f4ee;
+  --ink: #0b1214;
+  --muted: #5c6570;
+  --line: #e3ddd3;
+  --card: #ffffff;
+  --navy: #0a343c;
+  --navy-2: #0e4a54;
+  --copper: #b8881c;
+  --copper-soft: #f6e7c1;
+  --gold: #d7a22a;
+  --gold-dark: #b8881c;
+  --ok: #1f6b4a;
+  --warn: #b8881c;
+  --lost: #5c6570;
 }
 
 @theme inline {
@@ -25,6 +28,9 @@
   --color-navy-2: var(--navy-2);
   --color-copper: var(--copper);
   --color-copper-soft: var(--copper-soft);
+  --color-gold: var(--gold);
+  --color-gold-dark: var(--gold-dark);
+  --color-gold-soft: var(--copper-soft);
   --color-ok: var(--ok);
   --color-warn: var(--warn);
   --color-lost: var(--lost);
@@ -58,5 +64,5 @@ button {
 }
 
 ::selection {
-  background: #f0c9b4;
+  background: #f6e7c1;
 }
