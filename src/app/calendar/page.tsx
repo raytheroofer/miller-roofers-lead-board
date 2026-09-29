@@ -6,17 +6,20 @@ import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui";
 import { formatDateTime } from "@/lib/utils";
 import { pmLabel } from "@/lib/rr";
+import { isDemoLead } from "@/lib/demo-data";
 
 export const dynamic = "force-dynamic";
 
-export default async function CalendarPage() {
+export default async function CalendarPage({ searchParams }: { searchParams: Promise<{ records?: string }> }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  const appointments = await prisma.appointment.findMany({
+  const showDemo = (await searchParams).records === "demo";
+  const records = await prisma.appointment.findMany({
     include: { lead: true },
     orderBy: { startsAt: "asc" },
   });
+  const appointments = records.filter(appointment => isDemoLead(appointment.lead) === showDemo);
 
   return (
     <AppShell
@@ -29,6 +32,10 @@ export default async function CalendarPage() {
         Source of truth is the <strong>Roofr calendar</strong>. This page only shows human-entered appointments from the
         tracker. Phase 1 does not write Google or Roofr events.
       </p>
+      <p className="mt-2 text-sm text-muted">{showDemo ? "Demo / test appointments" : "Working appointments · Demo / test records excluded"}</p>
+      <Link className="text-sm underline" href={showDemo ? "/calendar" : "/calendar?records=demo"}>
+        {showDemo ? "Show working appointments" : "View demo / test appointments"}
+      </Link>
 
       {appointments.length === 0 ? (
         <Card className="mt-6 p-8 text-center text-sm text-muted">

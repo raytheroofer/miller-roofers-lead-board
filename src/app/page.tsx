@@ -26,7 +26,6 @@ export default async function BoardPage({
 
   const records = await prisma.lead.findMany({
     where: {
-      stage,
       assignedPm: pm === "unassigned" ? null : pm,
       source,
     },
@@ -39,8 +38,9 @@ export default async function BoardPage({
   });
 
   const showDemo = params.records === "demo";
-  const leads = records.filter(lead => isDemoLead(lead) === showDemo);
-  const countByStage = Object.fromEntries(STAGES.map(stage => [stage, leads.filter(l => l.stage === stage).length]));
+  const population = records.filter(lead => isDemoLead(lead) === showDemo);
+  const leads = population.filter(lead => !stage || lead.stage === stage);
+  const countByStage = Object.fromEntries(STAGES.map(stage => [stage, population.filter(l => l.stage === stage).length]));
 
   const query = new URLSearchParams();
   if (view === "table") query.set("view", "table");

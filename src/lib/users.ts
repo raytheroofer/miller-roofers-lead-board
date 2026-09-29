@@ -44,7 +44,7 @@ export function allowedEmails(): string[] {
     .trim()
     .toLowerCase();
   const base = fromEnv && fromEnv.length > 0 ? fromEnv : [...DEFAULT_ALLOWED_EMAILS];
-  return Array.from(new Set([...base.map((v) => v.toLowerCase()), firstmate]));
+  return Array.from(new Set([ownerEmail(), ...base.map((v) => v.toLowerCase()), firstmate]));
 }
 
 export function ownerEmail(): string {
