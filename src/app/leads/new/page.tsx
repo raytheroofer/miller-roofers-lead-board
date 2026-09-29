@@ -3,6 +3,8 @@ import { auth } from "@/auth";
 import { AppShell } from "@/components/app-shell";
 import { NewLeadForm } from "@/components/lead-forms";
 import { Card } from "@/components/ui";
+import Link from "next/link";
+import { randomUUID } from "node:crypto";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +23,9 @@ export default async function NewLeadPage() {
         Verify the lead in its original source, then capture it here. Create or find the opportunity in Roofr the same day
         and link its job number. Intake is manual; automatic import is paused during recovery.
       </p>
+      <p className="mt-3 text-sm"><Link href="/?view=table" className="underline">Search existing leads</Link> by name, phone, address or Roofr job number before creating another record.</p>
       <Card className="mt-6 max-w-3xl p-5">
-        <NewLeadForm />
+        <NewLeadForm captureId={randomUUID()} />
       </Card>
     </AppShell>
   );
