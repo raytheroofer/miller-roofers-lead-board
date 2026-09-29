@@ -6,7 +6,7 @@ A manual lead tracker for Miller Roofing Solutions. Roofr remains the job book a
 
 1. Open **Today** to see open leads needing an action, overdue actions, and upcoming work.
 2. Verify each incoming lead in its original channel, capture it, and set an owner, next action, and due time in Eastern Time.
-3. Create or find the opportunity in Roofr the same day. Copy its job ID exactly, including leading zeros and any hyphens. Both older numeric IDs and newer date-prefixed IDs are supported. The old MRS identifier is retained as a read-only legacy reference.
+3. Create or find the opportunity in Roofr the same day. Copy its job ID exactly, including leading zeros and any hyphens. Both older numeric IDs and newer date-prefixed IDs are supported. Save the job ID and verified CompanyCam project URL, then use **Open saved Roofr job** or **Open saved CompanyCam project** to open the source in a new tab. These links use the last saved values; unsaved edits do not change the destination. The old MRS identifier is retained as a read-only legacy reference.
 4. Book appointments in Roofr first; then record the confirmed reference and Eastern time here.
 5. Log completed calls and SMS manually. This app sends no messages.
 6. Complete an action with its result, then set the next one. Won work continues in Roofr.
@@ -22,6 +22,7 @@ Round-robin applies only to **unassigned Remodel Favor** leads, in Raymond → A
 - Bulk CSV import and generic lead-writing API endpoints are paused. They need duplicate-safe import and idempotency work before reopening. Owner forms remain available.
 - The webhook inbox defaults disabled. Enabling it requires both `FEATURE_WEBHOOK_INBOX=true` and `WEBHOOK_SECRET`. Enabled storage requires a matching secret, valid JSON, and a body under 256 KB. It does not create leads or perform outreach. Historical payloads remain accessible.
 - `FEATURE_TWILIO_LIVE=false` and `FEATURE_ROOFR_WRITE=false` must remain off. No automated digest is implemented.
+- Read-only Roofr links use `ROOFR_TEAM_ID`, defaulting to MRS's verified team `137502`. Only supported job IDs and HTTPS CompanyCam project URLs are made clickable; older unrecognized references remain visible in the form for review. Opening a link does not create or synchronize records.
 - Health checks now test database access. They do not establish business-data freshness.
 
 ## Build and verification
