@@ -1,4 +1,4 @@
-# MRS Leaderboard — owner recovery release
+# Miller Roofing Solutions — lead and follow-up workspace
 
 A manual lead tracker for Miller Roofing Solutions. Roofr remains the job book and calendar. Drive stores job documents, CompanyCam stores field evidence, and QuickBooks records posted accounting.
 
@@ -13,11 +13,12 @@ A manual lead tracker for Miller Roofing Solutions. Roofr remains the job book a
 
 Known demo records and names beginning `SYSTEM CHECK —` are excluded from the working board and Today. They remain in a separate demo view; no records are deleted.
 
-Round-robin applies only to **unassigned Remodel Favor** leads, in Raymond → Austin → Cody order. Repeated assignment does not advance the cursor again. Other sources require a manual assignment and explanation.
+Round-robin applies only to **unassigned Remodel Favor** leads, in Raymond → Cody order. Repeated assignment does not advance the cursor again. Other sources require a manual assignment and explanation.
 
 ## Current boundaries
 
-- Owner-only access defaults on, including for previously issued sessions. Set `OWNER_ONLY=false` only after reviewing team authorization.
+- Austin is inactive: new assignments and sign-in are blocked, including stale allowlists and sessions. Historical assignments remain labeled inactive for explicit owner review. Routing starts a separate Raymond/Cody cursor at Raymond; the previous cursor is preserved.
+- Owner-only access defaults on. To enable only Cody Boyd (`cody@mrsroofers.com`), set a private `CODY_PASSWORD` of at least 16 characters, different from owner/shared passwords. Keep `OWNER_ONLY=true`. Cody receives the PM role, uses no shared-password fallback, and cannot view the webhook inbox. Changing/removing his credential invalidates his earlier sessions; old shared-password sessions are not accepted.
 - `OWNER_PASSWORD` overrides the old shared `AUTH_PASSWORD` for the owner. Before loading real customer data, the owner must set a private credential or verify the existing credential is private. Rotating `AUTH_SECRET` invalidates old sessions. Never use template passwords in production.
 - Bulk CSV import and generic lead-writing API endpoints are paused. They need duplicate-safe import and idempotency work before reopening. Owner forms remain available.
 - The webhook inbox defaults disabled. Enabling it requires both `FEATURE_WEBHOOK_INBOX=true` and `WEBHOOK_SECRET`. Enabled storage requires a matching secret, valid JSON, and a body under 256 KB. It does not create leads or perform outreach. Historical payloads remain accessible.
@@ -58,3 +59,7 @@ For local development, configure `.env` from `.env.example` with a disposable Po
 Tests cover routing policy/repeated assignment, owner allowlisting, demo classification, Eastern and daylight-saving times, next-action stale completion, and webhook rejection. Mocked service tests do not replace an actual deployed save/reload test or a PostgreSQL concurrency test.
 
 The recovery release supersedes conflicting implementation descriptions in older Phase 1 docs. Draft team-invite and operating-system PRs require reconciliation before merging; do not merge them blindly over these access and routing changes.
+
+## Brand assets
+
+The original company logo is served locally from `public/brand/mrs-logo.png`, unchanged. The supplied MRS brand reference specifies teal `#006778`, gold `#D7A22A`, bronze `#9F792C` and charcoal `#1E1D1D`. Light surfaces and semantic status colors support readable forms and stage labels.

@@ -15,7 +15,7 @@ export default async function ImportPage() {
       userEmail={session.user.email ?? ""}
       pathname="/import"
     >
-      <h1 className="font-serif text-3xl">CSV import</h1>
+      <h1 className="font-semibold tracking-tight text-3xl">CSV import</h1>
       <p className="mt-1 max-w-2xl text-sm text-muted">
         Bulk import is paused during recovery because repeating an import can create duplicate leads.
       </p>

@@ -1,7 +1,8 @@
 import NextAuth, { type DefaultSession } from "next-auth";
 import Credentials from "next-auth/providers/credentials";
 import Google from "next-auth/providers/google";
-import { timingSafeEqual } from "crypto";
+import { createHmac, timingSafeEqual } from "crypto";
+import { CODY_EMAIL, codyPassword } from "@/lib/cody-access";
 import { firstmateEmail, isAllowlistedEmail, ownerEmail, staffFromEmail } from "@/lib/users";
 
 declare module "next-auth" {
@@ -10,6 +11,7 @@ declare module "next-auth" {
       role: string;
       slug: string;
       inRrPool: boolean;
+      credentialsCurrent?: boolean;
     } & DefaultSession["user"];
   }
 
@@ -28,11 +30,18 @@ function safeEqual(a: string, b: string): boolean {
 }
 
 function passwordForEmail(email: string): string | undefined {
+  if (email === CODY_EMAIL) return codyPassword();
   if (email === ownerEmail() && process.env.OWNER_PASSWORD) return process.env.OWNER_PASSWORD;
   if (email === firstmateEmail()) {
     return process.env.FIRSTMATE_PASSWORD || process.env.AUTH_PASSWORD;
   }
   return process.env.AUTH_PASSWORD;
+}
+
+function codyCredentialVersion(): string | undefined {
+  const password = codyPassword();
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  return password && secret ? createHmac("sha256", secret).update(password).digest("hex") : undefined;
 }
 
 const providers = [
@@ -101,6 +110,7 @@ const authConfig = NextAuth({
         token.inRrPool = user.inRrPool;
         token.email = user.email;
         token.name = user.name;
+        if (user.email?.toLowerCase() === CODY_EMAIL) token.credentialVersion = codyCredentialVersion();
       }
       if (token.email && (!token.role || !token.slug)) {
         const staff = staffFromEmail(String(token.email));
@@ -118,6 +128,10 @@ const authConfig = NextAuth({
         session.user.inRrPool = Boolean(token.inRrPool);
         session.user.email = token.email ?? session.user.email;
         session.user.name = token.name ?? session.user.name;
+        if (session.user.email?.toLowerCase() === CODY_EMAIL) {
+          const version = codyCredentialVersion();
+          session.user.credentialsCurrent = Boolean(version && token.credentialVersion === version);
+        }
       }
       return session;
     },
@@ -130,6 +144,7 @@ export const { handlers, signIn, signOut } = authConfig;
 export async function auth() {
   const session = await authConfig.auth();
   if (!session?.user?.email || !isAllowlistedEmail(session.user.email)) return null;
+  if (session.user.email.toLowerCase() === CODY_EMAIL && !session.user.credentialsCurrent) return null;
   const currentStaff = staffFromEmail(session.user.email);
   session.user.role = currentStaff.role;
   session.user.slug = currentStaff.slug;

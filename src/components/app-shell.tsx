@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { signOut } from "@/auth";
 import { featureFlags } from "@/lib/flags";
+import { BrandLogo } from "@/components/brand-logo";
+import { ownerEmail, firstmateEmail } from "@/lib/users";
 
 const NAV = [
   { href: "/", label: "Board" },
@@ -22,24 +24,27 @@ export function AppShell({
   pathname: string;
 }) {
   const flags = featureFlags();
+  const nav = NAV.filter(item => item.href !== "/admin/webhooks" || [ownerEmail(), firstmateEmail()].includes(userEmail));
 
   return (
     <div className="min-h-full">
-      <header className="border-b border-black/20 bg-navy text-white">
-        <div className="mx-auto flex max-w-[1500px] items-center justify-between gap-4 px-4 py-3">
-          <div className="min-w-0">
-            <p className="font-serif text-lg leading-none tracking-tight">Mrs Roofers</p>
-            <p className="mt-1 text-[11px] uppercase tracking-[0.16em] text-white/60">
-              Miller Roofing Solutions LLC · Jacksonville
-            </p>
-          </div>
-          <nav className="hidden items-center gap-1 md:flex">
-            {NAV.map((item) => (
+      <header className="border-t-4 border-gold bg-charcoal text-white">
+        <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6">
+          <Link href="/" aria-label="Miller Roofing Solutions — lead board" className="flex min-w-0 items-center gap-3">
+            <BrandLogo />
+            <div>
+              <p className="text-lg font-semibold leading-tight tracking-tight sm:text-xl">Miller Roofing<br />Solutions</p>
+              <p className="mt-1.5 text-[10px] uppercase tracking-[0.18em] text-gold">Lead & follow-up workspace</p>
+            </div>
+          </Link>
+          <nav aria-label="Main navigation" className="hidden items-center gap-1 xl:flex">
+            {nav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
+                aria-current={pathname === item.href ? "page" : undefined}
                 className={`rounded-md px-3 py-1.5 text-sm ${
-                  pathname === item.href ? "bg-white/12 text-white" : "text-white/70 hover:bg-white/8 hover:text-white"
+                  pathname === item.href ? "bg-navy text-white" : "text-white/75 hover:bg-white/8 hover:text-white"
                 }`}
               >
                 {item.label}
@@ -47,7 +52,7 @@ export function AppShell({
             ))}
           </nav>
           <div className="flex items-center gap-3 text-right">
-            <div className="hidden sm:block">
+            <div className="hidden md:block">
               <p className="text-sm">{userName}</p>
               <p className="text-[11px] text-white/55">{userEmail}</p>
             </div>
@@ -63,25 +68,26 @@ export function AppShell({
             </form>
           </div>
         </div>
-        <div className="bg-copper px-4 py-1.5 text-center text-[12px] text-white">
-          Phase 1 — <strong>track only</strong>. Twilio live: {flags.twilioLive ? "ON" : "OFF"}. Roofr write:{" "}
-          {flags.roofrWrite ? "ON" : "OFF"}. Book appointments in Roofr. Review Today each morning. No automatic digest.
+        <div className="border-t border-white/10 bg-navy px-4 py-2 text-center text-xs leading-relaxed text-white">
+          <strong>Manual lead tracking</strong><span className="mx-2 text-gold">•</span>Book jobs and appointments in Roofr.
+          {flags.twilioLive || flags.roofrWrite ? " Live integrations enabled." : " Calls and messages are logged here; nothing is sent automatically."}
         </div>
       </header>
-      <nav className="flex gap-2 overflow-x-auto border-b border-line bg-card px-4 py-2 md:hidden">
-        {NAV.map((item) => (
+      <nav aria-label="Compact navigation" className="flex gap-2 overflow-x-auto border-b border-line bg-card px-4 py-2 xl:hidden">
+        {nav.map((item) => (
           <Link
             key={item.href}
             href={item.href}
+            aria-current={pathname === item.href ? "page" : undefined}
             className={`whitespace-nowrap rounded-full px-3 py-1 text-sm ${
-              pathname === item.href ? "bg-navy text-white" : "bg-[#efe8da] text-ink"
+              pathname === item.href ? "bg-navy text-white" : "bg-paper text-ink"
             }`}
           >
             {item.label}
           </Link>
         ))}
       </nav>
-      <main className="mx-auto max-w-[1500px] px-4 py-5">{children}</main>
+      <main className="mx-auto max-w-[1500px] px-4 py-7 sm:px-6">{children}</main>
     </div>
   );
 }
