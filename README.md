@@ -1,6 +1,6 @@
 # Miller Roofing Solutions — lead and follow-up workspace
 
-A manual lead tracker for Miller Roofing Solutions. Roofr remains the job book and calendar. Drive stores job documents, CompanyCam stores field evidence, and QuickBooks records posted accounting.
+A lead tracker for Miller Roofing Solutions. It records where each lead came from and hands the opportunity to Roofr, which remains the job book and calendar.
 
 ## Owner workflow
 
