@@ -27,16 +27,14 @@ export default async function TodayPage() {
   ];
   return <AppShell userName={session.user.name ?? "Owner"} userEmail={session.user.email ?? ""} pathname="/today">
     <h1 className="font-semibold tracking-tight text-3xl">Today</h1>
-    <p className="mt-2 text-sm text-muted">{leads.length} open leads · Checked {formatDateTime(now)} ET. Manual updates; no live Roofr or accounting sync.</p>
+    <p className="mt-2 text-sm text-muted">{leads.length} open leads · Checked {formatDateTime(now)} ET. Record the source here, then open the job in Roofr.</p>
     <div className="my-5 flex flex-wrap gap-3 text-sm">
       <Link className="rounded-md bg-navy px-3 py-2 text-white" href="/leads/new">Capture a lead</Link>
       <a className="rounded-md border border-line px-3 py-2" href="https://app.roofr.com" target="_blank" rel="noreferrer">Roofr — jobs & calendar</a>
-      <a className="rounded-md border border-line px-3 py-2" href="https://drive.google.com" target="_blank" rel="noreferrer">Drive — job files</a>
       <a className="rounded-md border border-line px-3 py-2" href="https://app.companycam.com" target="_blank" rel="noreferrer">CompanyCam — evidence</a>
-      <a className="rounded-md border border-line px-3 py-2" href="https://qbo.intuit.com" target="_blank" rel="noreferrer">QuickBooks — accounting</a>
     </div>
     <Card className="mb-5 p-4 text-sm">
-      <strong>Morning review:</strong> Check incoming leads in the original channels, assign a person and a next action, then open Roofr for today’s appointments and sold jobs. Check collections and commission exceptions in the original job files and QuickBooks.
+      <strong>Morning review:</strong> Check incoming leads in the original channels, record the source, assign a person and a next action, then create or open the Roofr job the same day.
       <p className="mt-2 text-muted">Won work continues in Roofr. Demo and system-check records are excluded here. This queue does not claim to contain every active MRS job.</p>
     </Card>
     <div className="grid gap-5 lg:grid-cols-3">{groups.map(group => <section key={group.title}>
