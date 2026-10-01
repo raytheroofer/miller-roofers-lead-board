@@ -17,7 +17,7 @@ export function isIntakeSource(value: string): value is IntakeSource {
 export function intakeConfiguration(source: IntakeSource): "disabled" | "needs-setup" | "ready" {
   if (!(process.env.LEAD_INTAKE_SOURCES ?? "").split(",").map(v => v.trim()).includes(source)) return "disabled";
   const owner = process.env.OWNER_PASSWORD ?? "";
-  if (owner.length < 16 || owner === process.env.AUTH_PASSWORD || owner === process.env.FIRSTMATE_PASSWORD) return "needs-setup";
+  if (owner.length < 16 || [process.env.AUTH_PASSWORD, process.env.CODY_PASSWORD, process.env.FIRSTMATE_PASSWORD].includes(owner)) return "needs-setup";
   if (source === "remodel-favor" && !codyPassword()) return "needs-setup";
   const key = process.env[INTAKE_SOURCES[source].keyEnv] ?? "";
   if (!/^[a-f0-9]{64}$/.test(key)) return "needs-setup";

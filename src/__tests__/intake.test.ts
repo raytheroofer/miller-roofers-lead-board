@@ -31,12 +31,23 @@ describe("provider credentials", () => {
     vi.stubEnv("INTAKE_REMODEL_FAVOR_KEY", "a".repeat(64));
     expect(intakeConfiguration("website")).toBe("needs-setup");
   });
+  it("blocks every source when the owner password is shared with Cody", () => {
+    configure(); vi.stubEnv("CODY_PASSWORD", "isolated-owner-credential");
+    vi.stubEnv("LEAD_INTAKE_SOURCES", "website,remodel-favor,lsa,roofr-instant-estimator");
+    vi.stubEnv("INTAKE_LSA_KEY", "c".repeat(64)); vi.stubEnv("INTAKE_ROOFR_KEY", "d".repeat(64));
+    for (const source of ["website", "remodel-favor", "lsa", "roofr-instant-estimator"] as const) expect(intakeConfiguration(source)).toBe("needs-setup");
+  });
 });
 describe("lead-only contract", () => {
   it("normalizes equivalent phone/email/timestamp inputs", () => {
     const a = parseIntakeLead({ ...fixture, email: " TEST@EXAMPLE.INVALID ", receivedAt: "2026-09-22T17:41:00-04:00" }, "website");
     const b = parseIntakeLead({ ...fixture, phone: "+19045550100", email: "test@example.invalid" }, "website");
     expect(a).toEqual(b); expect(a.phone).toBe("+19045550100");
+  });
+  it("normalizes provider timestamps with microsecond or nanosecond precision", () => {
+    for (const receivedAt of ["2026-09-22T21:41:00.123456Z", "2026-09-22T17:41:00.123456789-04:00"]) {
+      expect(parseIntakeLead({ ...fixture, receivedAt }, "website").receivedAt).toBe("2026-09-22T21:41:00.123Z");
+    }
   });
   it.each(["payload", "headers", "transcript", "attachments", "source", "assignedPm", "stage", "__proto__"])("rejects extra field %s", field => {
     const data = { ...fixture, [field]: "private" };
