@@ -24,6 +24,8 @@ import { easternInput } from "@/lib/eastern-time";
 import { isDemoLead } from "@/lib/demo-data";
 import { isIntakeSource } from "@/lib/intake-config";
 import { safeSourceUrl } from "@/lib/intake-contract";
+import { DuplicateHint } from "@/components/duplicate-hint";
+import { DUPLICATE_REVIEW_TYPE, parseDuplicateReview } from "@/lib/duplicate-review";
 
 export const dynamic = "force-dynamic";
 
@@ -97,6 +99,7 @@ export default async function LeadDetailPage({
         />
       </Card>
 
+      <DuplicateHint leadId={lead.id} showDemo={isDemoLead(lead)} />
       <div className="grid gap-5 xl:grid-cols-[1.3fr_0.7fr]">
         <div className="space-y-5">
           <Card className="p-4">
@@ -115,12 +118,12 @@ export default async function LeadDetailPage({
                   <li key={activity.id} className="border-l-2 border-line pl-3">
                     <div className="flex flex-wrap items-baseline justify-between gap-2">
                       <p className="text-sm font-medium capitalize">
-                        {activity.type} · {activity.actor} · {activity.actorName}
+                        {activity.type === DUPLICATE_REVIEW_TYPE ? "Duplicate review" : activity.type} · {activity.actor} · {activity.actorName}
                       </p>
                       <p className="text-xs text-muted">{formatDateTime(activity.occurredAt)}</p>
                     </div>
                     <p className="text-sm">{activity.summary ?? activity.outcome ?? "Logged"}</p>
-                    {activity.type === "source_received" ? <SourceReceipt body={activity.body} /> : activity.body ? <p className="mt-1 text-sm text-muted">{activity.body}</p> : null}
+                    {activity.type === "source_received" ? <SourceReceipt body={activity.body} /> : activity.type === DUPLICATE_REVIEW_TYPE ? <p className="mt-1 text-sm text-muted">{parseDuplicateReview(activity.body)?.note ?? "Review history"}</p> : activity.body ? <p className="mt-1 text-sm text-muted">{activity.body}</p> : null}
                   </li>
                 ))}
               </ol>

@@ -8,6 +8,7 @@ import { isDemoLead } from "@/lib/demo-data";
 import { formatDateTime } from "@/lib/utils";
 import { getAssignees } from "@/lib/routing-directory";
 import { pmLabel } from "@/lib/rr";
+import { DuplicateHint } from "@/components/duplicate-hint";
 
 export const dynamic = "force-dynamic";
 
@@ -37,6 +38,7 @@ export default async function TodayPage() {
       <strong>Follow-up review:</strong> Check incoming leads in the original channels, search for duplicates, assign a person and a next action, then review overdue follow-ups and upcoming appointments.
       <p className="mt-2 text-muted">Won work continues in Roofr. Demo and system-check records are excluded here. This queue does not claim to contain every active MRS job.</p>
     </Card>
+    <DuplicateHint />
     <div className="grid gap-5 lg:grid-cols-3">{groups.map(group => <section key={group.title}>
       <h2 className="mb-3 font-semibold tracking-tight text-xl">{group.title} <span className="text-sm text-muted">({group.rows.length})</span></h2>
       <div className="space-y-3">{group.rows.length === 0 ? <Card className="p-4 text-sm text-muted">No records in this group.</Card> : group.rows.map(lead => <Card key={lead.id} className="p-4">

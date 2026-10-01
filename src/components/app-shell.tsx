@@ -9,6 +9,7 @@ const NAV = [
   { href: "/today", label: "Today" },
   { href: "/leads/new", label: "New lead" },
   { href: "/calendar", label: "Calendar" },
+  { href: "/duplicates", label: "Duplicate review" },
 ];
 
 export function AppShell({

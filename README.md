@@ -19,6 +19,10 @@ New assignees start outside the paid-lead pool and do not receive login access o
 
 ## Current boundaries
 
+**Duplicate review** (`/duplicates`) compares records across sources using normalized phone numbers (extensions preserved), exact normalized email, or matching address plus ZIP. It also finds repeat records within a source. Names alone, approximate addresses and records outside this board are not matched. Demo and working records are compared separately; closed inquiries are included. The comparison stops at 5,000 candidate pairs and explicitly warns when incomplete.
+
+Signed-in staff can mark a pair related or separate, record a reason/follow-up plan, or reopen it. Reviews are append-only activity history, retry-safe and protected against stale record/review versions. Contact/name/source changes make the old decision pending again; follow-up-only changes retain it. Today and lead details flag unresolved or related pairs before follow-up. A review preserves both records and their assignments, stages and follow-ups; staff coordinate the next step. No schema migration, automatic merge, duplicate suppression or customer message is performed.
+
 - Restricted source-specific intake and an owner-only **Lead sources** status page are implemented. All feeds default off until credentials and upstream delivery are verified. See [LEAD-INTEGRATIONS.md](LEAD-INTEGRATIONS.md) for setup, field mappings, safe retries and remaining activation work. This does not restore the raw webhook inbox.
 
 - Austin is inactive: new assignments and sign-in are blocked, including stale allowlists and sessions. Historical assignments remain labeled inactive for explicit owner review. Routing starts a separate Raymond/Cody cursor at Raymond; the previous cursor is preserved.
