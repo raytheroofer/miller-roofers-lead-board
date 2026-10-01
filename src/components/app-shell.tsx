@@ -2,14 +2,12 @@ import Link from "next/link";
 import { signOut } from "@/auth";
 import { featureFlags } from "@/lib/flags";
 import { BrandLogo } from "@/components/brand-logo";
-import { ownerEmail, firstmateEmail } from "@/lib/users";
 
 const NAV = [
   { href: "/", label: "Board" },
   { href: "/today", label: "Today" },
   { href: "/leads/new", label: "New lead" },
   { href: "/calendar", label: "Calendar" },
-  { href: "/admin/webhooks", label: "Webhooks" },
 ];
 
 export function AppShell({
@@ -24,7 +22,6 @@ export function AppShell({
   pathname: string;
 }) {
   const flags = featureFlags();
-  const nav = NAV.filter(item => item.href !== "/admin/webhooks" || [ownerEmail(), firstmateEmail()].includes(userEmail));
 
   return (
     <div className="min-h-full">
@@ -38,7 +35,7 @@ export function AppShell({
             </div>
           </Link>
           <nav aria-label="Main navigation" className="hidden items-center gap-1 xl:flex">
-            {nav.map((item) => (
+            {NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -74,7 +71,7 @@ export function AppShell({
         </div>
       </header>
       <nav aria-label="Compact navigation" className="flex gap-2 overflow-x-auto border-b border-line bg-card px-4 py-2 xl:hidden">
-        {nav.map((item) => (
+        {NAV.map((item) => (
           <Link
             key={item.href}
             href={item.href}
