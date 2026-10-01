@@ -2,64 +2,40 @@ import { InputError } from "@/lib/input-error";
 import { assertAssignablePm, nextRoundRobin, RR_CURSOR_ID, type RrPm } from "@/lib/rr";
 import { canTransition } from "@/lib/stages";
 import { serialTransaction } from "@/lib/transaction";
+import type { Prisma } from "@prisma/client";
 
 export async function assignRoundRobin(options: {
   leadId: string;
   actorName: string;
 }) {
-  return serialTransaction(async (tx) => {
-    const lead = await tx.lead.findUnique({ where: { id: options.leadId } });
-  if (!lead) {
-    throw new InputError("Lead not found");
-  }
+  return serialTransaction(tx => assignRoundRobinInTransaction(tx, options));
+}
+
+export async function assignRoundRobinInTransaction(tx: Prisma.TransactionClient, options: {
+  leadId: string; actorName: string; actor?: "human" | "system";
+}) {
+  const lead = await tx.lead.findUnique({ where: { id: options.leadId } });
+  if (!lead) throw new InputError("Lead not found");
   if (lead.source !== "remodel-favor") throw new InputError("Round-robin is only for Remodel Favor leads. Use manual assignment for this source.");
   if (lead.assignedPm) return { lead, assignedPm: lead.assignedPm, nextIndex: null };
 
-    const cursor = await tx.roundRobinCursor.upsert({
-    where: { id: RR_CURSOR_ID },
-    update: {},
-    create: { id: RR_CURSOR_ID, lastIndex: -1 },
+  const cursor = await tx.roundRobinCursor.upsert({
+    where: { id: RR_CURSOR_ID }, update: {}, create: { id: RR_CURSOR_ID, lastIndex: -1 },
   });
-
-    const { pm, nextIndex } = nextRoundRobin(cursor.lastIndex);
-
-    const updated = await tx.lead.update({
-      where: { id: lead.id },
-      data: {
-        assignedPm: pm,
-        stage: canTransition(lead.stage, "assign") ? "assign" : lead.stage,
-      },
-    });
-
-    await tx.assignmentEvent.create({
-      data: {
-        leadId: lead.id,
-        fromPm: lead.assignedPm,
-        toPm: pm,
-        reason: "rr_auto",
-        actor: options.actorName,
-      },
-    });
-
-    await tx.activity.create({
-      data: {
-        leadId: lead.id,
-        type: "assign",
-        direction: "n/a",
-        actor: "human",
-        actorName: options.actorName,
-        outcome: "assigned",
-        summary: `Round-robin assigned to ${pm} (Raymond → Cody)`,
-      },
-    });
-
-    await tx.roundRobinCursor.update({
-      where: { id: RR_CURSOR_ID },
-      data: { lastIndex: nextIndex },
-    });
-
-    return { lead: updated, assignedPm: pm, nextIndex };
+  const { pm, nextIndex } = nextRoundRobin(cursor.lastIndex);
+  const updated = await tx.lead.update({
+    where: { id: lead.id },
+    data: { assignedPm: pm, stage: canTransition(lead.stage, "assign") ? "assign" : lead.stage },
   });
+  await tx.assignmentEvent.create({ data: {
+    leadId: lead.id, fromPm: lead.assignedPm, toPm: pm, reason: "rr_auto", actor: options.actorName,
+  } });
+  await tx.activity.create({ data: {
+    leadId: lead.id, type: "assign", direction: "n/a", actor: options.actor ?? "human",
+    actorName: options.actorName, outcome: "assigned", summary: `Round-robin assigned to ${pm} (Raymond → Cody)`,
+  } });
+  await tx.roundRobinCursor.update({ where: { id: RR_CURSOR_ID }, data: { lastIndex: nextIndex } });
+  return { lead: updated, assignedPm: pm, nextIndex };
 }
 
 export async function assignManual(options: {

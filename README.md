@@ -17,6 +17,8 @@ Round-robin applies only to **unassigned Remodel Favor** leads, in Raymond → C
 
 ## Current boundaries
 
+- Restricted source-specific intake and an owner-only **Lead sources** status page are implemented. All feeds default off until credentials and upstream delivery are verified. See [LEAD-INTEGRATIONS.md](LEAD-INTEGRATIONS.md) for setup, field mappings, safe retries and remaining activation work. This does not restore the raw webhook inbox.
+
 - Austin is inactive: new assignments and sign-in are blocked, including stale allowlists and sessions. Historical assignments remain labeled inactive for explicit owner review. Routing starts a separate Raymond/Cody cursor at Raymond; the previous cursor is preserved.
 - Owner-only access defaults on. To enable only Cody Boyd (`cody@mrsroofers.com`), set a private `CODY_PASSWORD` of at least 16 characters, different from owner/shared passwords. Keep `OWNER_ONLY=true`. Cody receives the PM role, uses no shared-password fallback, and cannot view the webhook inbox. Changing/removing his credential invalidates his earlier sessions; old shared-password sessions are not accepted.
 - `OWNER_PASSWORD` overrides the old shared `AUTH_PASSWORD` for the owner. Before loading real customer data, the owner must set a private credential or verify the existing credential is private. Rotating `AUTH_SECRET` invalidates old sessions. Never use template passwords in production.
