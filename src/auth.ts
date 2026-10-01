@@ -45,9 +45,13 @@ function codyCredentialVersion(): string | undefined {
 }
 
 function ownerCredentialVersion(): string | undefined {
-  const password = process.env.OWNER_PASSWORD;
+  const privatePassword = process.env.OWNER_PASSWORD;
+  const password = privatePassword || process.env.AUTH_PASSWORD || "";
   const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
-  return password && secret ? createHmac("sha256", secret).update(password).digest("hex") : undefined;
+  // Bind both the active credential and its mode. Removing a private password
+  // must not make sessions issued under that password valid in legacy mode.
+  return secret ? createHmac("sha256", secret)
+    .update(privatePassword ? "private" : "legacy-shared").update("\0").update(password).digest("hex") : undefined;
 }
 
 const providers = [
@@ -139,7 +143,7 @@ const authConfig = NextAuth({
           const version = codyCredentialVersion();
           session.user.credentialsCurrent = Boolean(version && token.credentialVersion === version);
         }
-        if (session.user.email?.toLowerCase() === ownerEmail() && process.env.OWNER_PASSWORD) {
+        if (session.user.email?.toLowerCase() === ownerEmail()) {
           const version = ownerCredentialVersion();
           session.user.credentialsCurrent = Boolean(version && token.ownerCredentialVersion === version);
         }
@@ -156,7 +160,7 @@ export async function auth() {
   const session = await authConfig.auth();
   if (!session?.user?.email || !isAllowlistedEmail(session.user.email)) return null;
   if (session.user.email.toLowerCase() === CODY_EMAIL && !session.user.credentialsCurrent) return null;
-  if (session.user.email.toLowerCase() === ownerEmail() && process.env.OWNER_PASSWORD && !session.user.credentialsCurrent) return null;
+  if (session.user.email.toLowerCase() === ownerEmail() && !session.user.credentialsCurrent) return null;
   const currentStaff = staffFromEmail(session.user.email);
   session.user.role = currentStaff.role;
   session.user.slug = currentStaff.slug;
