@@ -46,7 +46,7 @@ export function parseIntakeLead(input: unknown, source: IntakeSource, now = new 
   if (!/^[a-zA-Z0-9][a-zA-Z0-9_.:-]*$/.test(recordId)) invalid("recordId must be the stable provider lead ID, using letters, digits, dots, colons, dashes or underscores.");
   const name = str("name", 160, true)!;
   const received = str("receivedAt", 35, true)!;
-  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,3})?(?:Z|[+-]\d{2}:\d{2})$/.test(received)) invalid("receivedAt must be an ISO timestamp with a time zone.");
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(received)) invalid("receivedAt must be an ISO timestamp with a time zone.");
   const date = new Date(received);
   if (!Number.isFinite(date.getTime()) || date.getTime() > now.getTime() + 5 * 60_000) invalid("receivedAt must be a valid timestamp, no more than five minutes in the future.");
   if (!new Date(`${received.slice(0, 10)}T00:00:00Z`).toISOString().startsWith(received.slice(0, 10))) invalid("receivedAt has an invalid calendar date.");
