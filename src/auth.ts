@@ -44,6 +44,12 @@ function codyCredentialVersion(): string | undefined {
   return password && secret ? createHmac("sha256", secret).update(password).digest("hex") : undefined;
 }
 
+function ownerCredentialVersion(): string | undefined {
+  const password = process.env.OWNER_PASSWORD;
+  const secret = process.env.AUTH_SECRET || process.env.NEXTAUTH_SECRET;
+  return password && secret ? createHmac("sha256", secret).update(password).digest("hex") : undefined;
+}
+
 const providers = [
   Credentials({
     id: "credentials",
@@ -111,6 +117,7 @@ const authConfig = NextAuth({
         token.email = user.email;
         token.name = user.name;
         if (user.email?.toLowerCase() === CODY_EMAIL) token.credentialVersion = codyCredentialVersion();
+        if (user.email?.toLowerCase() === ownerEmail()) token.ownerCredentialVersion = ownerCredentialVersion();
       }
       if (token.email && (!token.role || !token.slug)) {
         const staff = staffFromEmail(String(token.email));
@@ -132,6 +139,10 @@ const authConfig = NextAuth({
           const version = codyCredentialVersion();
           session.user.credentialsCurrent = Boolean(version && token.credentialVersion === version);
         }
+        if (session.user.email?.toLowerCase() === ownerEmail() && process.env.OWNER_PASSWORD) {
+          const version = ownerCredentialVersion();
+          session.user.credentialsCurrent = Boolean(version && token.ownerCredentialVersion === version);
+        }
       }
       return session;
     },
@@ -145,6 +156,7 @@ export async function auth() {
   const session = await authConfig.auth();
   if (!session?.user?.email || !isAllowlistedEmail(session.user.email)) return null;
   if (session.user.email.toLowerCase() === CODY_EMAIL && !session.user.credentialsCurrent) return null;
+  if (session.user.email.toLowerCase() === ownerEmail() && process.env.OWNER_PASSWORD && !session.user.credentialsCurrent) return null;
   const currentStaff = staffFromEmail(session.user.email);
   session.user.role = currentStaff.role;
   session.user.slug = currentStaff.slug;

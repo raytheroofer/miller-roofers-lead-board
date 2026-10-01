@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const tx = vi.hoisted(() => ({ lead: { findUniqueOrThrow: vi.fn(), update: vi.fn() }, activity: { create: vi.fn() }, assignmentEvent: { create: vi.fn() } }));
+const tx = vi.hoisted(() => ({ user: { findMany: vi.fn() }, roundRobinCursor: { findUnique: async () => null }, lead: { findUniqueOrThrow: vi.fn(), update: vi.fn() }, activity: { create: vi.fn() }, assignmentEvent: { create: vi.fn() } }));
 vi.mock("@/lib/transaction", () => ({ serialTransaction: (run: (client: typeof tx) => unknown) => run(tx) }));
 vi.mock("@/lib/session", () => ({ actorFromSession: async () => ({ name: "Owner" }) }));
 vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 import { saveNextAction, completeNextAction } from "@/app/next-action";
 const form = (values: Record<string, string>) => { const data = new FormData(); Object.entries(values).forEach(([k,v]) => data.set(k,v)); return data; };
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); tx.user.findMany.mockResolvedValue([]); });
 describe("owner action workflow", () => {
   it("rejects an action without a valid due time before writing anything", async () => {
     const result = await saveNextAction({}, form({ leadId: "x", summary: "Call back", assignedPm: "raymond", due: "" }));

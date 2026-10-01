@@ -3,7 +3,8 @@
 import { revalidatePath } from "next/cache";
 import { actorFromSession } from "@/lib/session";
 import { parseEasternInput } from "@/lib/eastern-time";
-import { isRrPm } from "@/lib/rr";
+import { isAssignablePm } from "@/lib/rr";
+import { getAssignees } from "@/lib/routing-directory";
 import { serialTransaction } from "@/lib/transaction";
 
 export type NextActionState = { error?: string; message?: string };
@@ -16,11 +17,11 @@ export async function saveNextAction(_previous: NextActionState, form: FormData)
   const assignmentReason = String(form.get("assignmentReason") ?? "").trim();
   const assignedPm = String(form.get("assignedPm") ?? "");
   if (!summary || summary.length > 500) return { error: "Enter a next action of 1–500 characters." };
-  if (!isRrPm(assignedPm)) return { error: "Choose an owner for the action." };
   let due: Date;
   try { due = parseEasternInput(String(form.get("due") ?? "")); }
   catch (error) { return { error: (error as Error).message }; }
   const error = await serialTransaction(async tx => {
+    if (!isAssignablePm(assignedPm, await getAssignees(tx))) return "Choose an owner from the current directory.";
     const lead = await tx.lead.findUniqueOrThrow({ where: { id: leadId } });
     if (lead.updatedAt.toISOString() !== expectedVersion) return "This record changed. Reload before saving the next action.";
     if (lead.assignedPm !== assignedPm && !assignmentReason) return "Explain why you are setting or changing the action owner.";

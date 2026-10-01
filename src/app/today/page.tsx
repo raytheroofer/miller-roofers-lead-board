@@ -6,6 +6,7 @@ import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui";
 import { isDemoLead } from "@/lib/demo-data";
 import { formatDateTime } from "@/lib/utils";
+import { getAssignees } from "@/lib/routing-directory";
 import { pmLabel } from "@/lib/rr";
 
 export const dynamic = "force-dynamic";
@@ -14,11 +15,11 @@ export default async function TodayPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   const now = new Date();
-  const records = await prisma.lead.findMany({
+  const [assignees, records] = await Promise.all([getAssignees(), prisma.lead.findMany({
     where: { stage: { not: "won" }, OR: [{ stage: { not: "lost_nurture" } }, { nextActionAt: { not: null } }] },
     include: { opportunity: true, activities: { where: { type: "next_action" }, orderBy: { occurredAt: "desc" }, take: 1 } },
     orderBy: [{ nextActionAt: "asc" }, { createdAt: "asc" }],
-  });
+  })]);
   const leads = records.filter(lead => !isDemoLead(lead));
   const groups = [
     { title: "Needs a next action", rows: leads.filter(l => !l.nextActionAt) },
@@ -41,7 +42,7 @@ export default async function TodayPage() {
       <div className="space-y-3">{group.rows.length === 0 ? <Card className="p-4 text-sm text-muted">No records in this group.</Card> : group.rows.map(lead => <Card key={lead.id} className="p-4">
         <Link href={`/leads/${lead.id}`} className="font-medium underline">{lead.name}</Link>
         <p className="mt-2 text-sm">{lead.nextActionAt ? lead.activities[0]?.summary ?? "Review the scheduled appointment" : "Choose the next action"}</p>
-        <p className="mt-2 text-xs text-muted">{pmLabel(lead.assignedPm)} · {formatDateTime(lead.nextActionAt)}{lead.nextActionAt ? " ET" : ""}</p>
+        <p className="mt-2 text-xs text-muted">{pmLabel(lead.assignedPm, assignees)} · {formatDateTime(lead.nextActionAt)}{lead.nextActionAt ? " ET" : ""}</p>
         <p className="mt-1 text-xs text-muted">Roofr job: {lead.opportunity?.roofrId ?? "Not linked — verify in Roofr"}</p>
       </Card>)}</div>
     </section>)}</div>

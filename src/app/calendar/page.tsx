@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { AppShell } from "@/components/app-shell";
 import { Card } from "@/components/ui";
 import { formatDateTime } from "@/lib/utils";
+import { getAssignees } from "@/lib/routing-directory";
 import { pmLabel } from "@/lib/rr";
 import { isDemoLead } from "@/lib/demo-data";
 
@@ -15,10 +16,10 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
   if (!session?.user) redirect("/login");
 
   const showDemo = (await searchParams).records === "demo";
-  const records = await prisma.appointment.findMany({
+  const [assignees, records] = await Promise.all([getAssignees(), prisma.appointment.findMany({
     include: { lead: true },
     orderBy: { startsAt: "asc" },
-  });
+  })]);
   const appointments = records.filter(appointment => isDemoLead(appointment.lead) === showDemo);
 
   return (
@@ -52,7 +53,7 @@ export default async function CalendarPage({ searchParams }: { searchParams: Pro
                   </Link>
                   <p className="text-sm text-muted">
                     {formatDateTime(appt.startsAt)}
-                    {appt.endsAt ? ` – ${formatDateTime(appt.endsAt)}` : ""} · {pmLabel(appt.assignee)}
+                    {appt.endsAt ? ` – ${formatDateTime(appt.endsAt)}` : ""} · {pmLabel(appt.assignee, assignees)}
                   </p>
                 </div>
                 <p className="text-xs uppercase tracking-wide text-muted">{appt.status}</p>

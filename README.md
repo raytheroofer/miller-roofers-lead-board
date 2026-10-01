@@ -13,7 +13,9 @@ A manual lead tracker for Miller Roofing Solutions. Roofr remains the job book a
 
 Known demo records and names beginning `SYSTEM CHECK —` are excluded from the working board and Today. They remain in a separate demo view; no records are deleted.
 
-Round-robin applies only to **unassigned Remodel Favor** leads, in Raymond → Cody order. Repeated assignment does not advance the cursor again. Other sources require a manual assignment and explanation.
+Round-robin applies only to **unassigned Remodel Favor** leads. The default order is Raymond → Cody. The owner can add assignees and pause/resume paid-lead membership in **Lead routing** (`/routing`). Pausing preserves the member's position and historical assignments; other sources require manual assignment and an explanation. If everyone is paused, incoming paid leads are saved unassigned with an immediate review action. Repeated delivery does not assign again, including after the pool resumes.
+
+New assignees start outside the paid-lead pool and do not receive login access or invitations. They are available for manual assignment, next actions and confirmed appointments. Only the owner can change pool membership, and a private `OWNER_PASSWORD` is required. Old unused database pool flags are ignored until the owner explicitly saves a pool change; deploying this release does not initialize settings or change the current rotation. The first save initializes the existing defaults and applies the requested change in one transaction. No schema migration is required.
 
 ## Current boundaries
 
@@ -21,7 +23,7 @@ Round-robin applies only to **unassigned Remodel Favor** leads, in Raymond → C
 
 - Austin is inactive: new assignments and sign-in are blocked, including stale allowlists and sessions. Historical assignments remain labeled inactive for explicit owner review. Routing starts a separate Raymond/Cody cursor at Raymond; the previous cursor is preserved.
 - Owner-only access defaults on. To enable only Cody Boyd (`cody@mrsroofers.com`), set a private `CODY_PASSWORD` of at least 16 characters, different from owner/shared passwords. Keep `OWNER_ONLY=true`. Cody receives the PM role, uses no shared-password fallback, and cannot view the webhook inbox. Changing/removing his credential invalidates his earlier sessions; old shared-password sessions are not accepted.
-- `OWNER_PASSWORD` overrides the old shared `AUTH_PASSWORD` for the owner. Before loading real customer data, the owner must set a private credential or verify the existing credential is private. Rotating `AUTH_SECRET` invalidates old sessions. Never use template passwords in production.
+- `OWNER_PASSWORD` overrides the old shared `AUTH_PASSWORD` for the owner. Configuring or changing it invalidates earlier owner sessions, including sessions created with the legacy shared password. Sign in again after deployment with the private owner password. Cody's separate sessions remain valid unless his credential or the session secret also changes. Rotating `AUTH_SECRET` invalidates all earlier sessions. Never use template passwords in production.
 - Bulk CSV import and generic lead-writing API endpoints are paused. They need duplicate-safe import and idempotency work before reopening. Owner forms remain available.
 - Generic webhook intake and raw payload reads are retired for every role. `/admin/webhooks` and GET `/api/webhooks` return not found; source POST endpoints return 410 without reading or storing the body. Old feature flags and secrets cannot enable them. Historical database events are retained for investigation but have no application read path. Future source integrations must validate and retain only approved lead fields.
 - `FEATURE_TWILIO_LIVE=false` and `FEATURE_ROOFR_WRITE=false` must remain off. No automated digest is implemented.

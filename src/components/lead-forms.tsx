@@ -11,7 +11,7 @@ import {
 } from "@/app/actions";
 import { Field, Label, Select, Area } from "@/components/ui";
 import { SubmitButton as Button } from "@/components/submit-button";
-import { isRrPm, RR_POOL, RR_POOL_LABELS } from "@/lib/rr";
+import { isAssignablePm, type Assignee } from "@/lib/rr";
 import { LEAD_SOURCES, SOURCE_LABELS } from "@/lib/sources";
 import { STAGES, STAGE_LABELS, canTransition, type Stage } from "@/lib/stages";
 import { parseJsonArray } from "@/lib/utils";
@@ -90,9 +90,11 @@ export function LogSmsForm({ leadId }: { leadId: string }) {
 export function SetAppointmentForm({
   leadId,
   defaultAssignee,
+  assignees,
 }: {
   leadId: string;
   defaultAssignee: string | null;
+  assignees: Assignee[];
 }) {
   return (
     <ActionForm action={setAppointmentAction} className="space-y-3">
@@ -110,11 +112,11 @@ export function SetAppointmentForm({
       </div>
       <div>
         <Label>Assignee</Label>
-        <Select name="assignee" required defaultValue={defaultAssignee && !isRrPm(defaultAssignee) ? "" : defaultAssignee ?? "raymond"}>
+        <Select name="assignee" required defaultValue={isAssignablePm(defaultAssignee, assignees) ? defaultAssignee : ""}>
           <option value="" disabled>Choose an active PM</option>
-          {RR_POOL.map((pm) => (
-            <option key={pm} value={pm}>
-              {RR_POOL_LABELS[pm]}
+          {assignees.map((pm) => (
+            <option key={pm.slug} value={pm.slug}>
+              {pm.name}
             </option>
           ))}
         </Select>
@@ -136,28 +138,30 @@ export function AssignPanel({
   leadId,
   assignedPm,
   source,
+  assignees,
 }: {
   leadId: string;
   assignedPm: string | null;
   source: string;
+  assignees: Assignee[];
 }) {
   return (
     <div className="space-y-4">
       {source === "remodel-favor" && !assignedPm && <ActionForm action={assignRoundRobinAction}>
         <input type="hidden" name="leadId" value={leadId} />
-        <Button type="submit" variant="secondary" className="w-full">
-          Round-robin assign (Ray → Cody)
+        <Button type="submit" variant="secondary" className="w-full" disabled={!assignees.some(member => member.inRrPool)}>
+          Assign from paid-lead pool
         </Button>
       </ActionForm>}
       <ActionForm action={assignManualAction} className="space-y-2">
         <input type="hidden" name="leadId" value={leadId} />
         <input type="hidden" name="reason" value={assignedPm ? "reassign" : "manual_override"} />
         <Label>Manual override</Label>
-        <Select name="toPm" required defaultValue={assignedPm && !isRrPm(assignedPm) ? "" : assignedPm ?? "raymond"}>
+        <Select name="toPm" required defaultValue={isAssignablePm(assignedPm, assignees) ? assignedPm : ""}>
           <option value="" disabled>Choose an active PM</option>
-          {RR_POOL.map((pm) => (
-            <option key={pm} value={pm}>
-              {RR_POOL_LABELS[pm]}
+          {assignees.map((pm) => (
+            <option key={pm.slug} value={pm.slug}>
+              {pm.name}
             </option>
           ))}
         </Select>
@@ -168,6 +172,7 @@ export function AssignPanel({
         </Button>
       </ActionForm>
       <p className="text-xs text-muted">Round-robin applies only to unassigned Remodel Favor leads. Other sources are assigned manually. No automatic notification.</p>
+      <p className="text-xs text-muted">Paid-lead pool: {assignees.filter(member => member.inRrPool).map(member => member.name).join(" → ") || "Paused — assign manually"}.</p>
     </div>
   );
 }

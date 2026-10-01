@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-const tx = vi.hoisted(() => ({ lead: { findUniqueOrThrow: vi.fn(), update: vi.fn() }, activity: { create: vi.fn() },
+const tx = vi.hoisted(() => ({ user: { findMany: vi.fn() }, roundRobinCursor: { findUnique: async () => null }, lead: { findUniqueOrThrow: vi.fn(), update: vi.fn() }, activity: { create: vi.fn() },
   opportunityLink: { findUnique: vi.fn(), findFirst: vi.fn(), upsert: vi.fn() },
   appointment: { findFirst: vi.fn(), findMany: vi.fn(), create: vi.fn(), update: vi.fn() }, assignmentEvent: { create: vi.fn() } }));
 vi.mock("@/lib/prisma", () => ({ prisma: {} }));
@@ -9,7 +9,7 @@ vi.mock("next/cache", () => ({ revalidatePath: vi.fn() }));
 import { updateOpportunityAction, updateStageAction, setAppointmentAction } from "@/app/actions";
 import { InputError, runFormAction } from "@/lib/input-error";
 const form = (values: Record<string, string>) => { const data = new FormData(); Object.entries(values).forEach(([k,v]) => data.set(k,v)); return data; };
-beforeEach(() => { vi.resetAllMocks(); vi.useFakeTimers(); vi.setSystemTime(new Date("2026-09-29T12:00:00Z")); });
+beforeEach(() => { vi.resetAllMocks(); tx.user.findMany.mockResolvedValue([]); vi.useFakeTimers(); vi.setSystemTime(new Date("2026-09-29T12:00:00Z")); });
 afterEach(() => vi.useRealTimers());
 
 describe("action feedback and existing records", () => {
