@@ -61,7 +61,8 @@ export function parseZeusSnapshot(input: unknown): ZeusObservation[] {
       stormDate,
       hailIn: numberOrNull(row.max_hail_in, 12),
       windMph: numberOrNull(row.wind_gust_max_mph, 300),
-      homesAffected: numberOrNull(row.homes_affected, 10000000),
+      homesAffected: typeof row.homes_affected === "number" && Number.isInteger(row.homes_affected)
+        ? numberOrNull(row.homes_affected, 10000000) : null,
       confidence: numberOrNull(row.confidence, 1),
       preliminary: row.preliminary === true,
       quarantineReason: /^3[234]\d{3}$/.test(row.zip) ? null : "Suspect Florida ZIP; verify geography",
