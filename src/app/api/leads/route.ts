@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { isLeadSource } from "@/lib/sources";
 import { isStage } from "@/lib/stages";
+import { getAssignees } from "@/lib/routing-directory";
 import { isReadablePm } from "@/lib/rr";
 
 export const dynamic = "force-dynamic";
@@ -12,6 +13,7 @@ export async function GET(request: Request) {
     return Response.json({ error: "Unauthorized" }, { status: 401 });
   }
 
+  const assignees = await getAssignees();
   const url = new URL(request.url);
   const stage = url.searchParams.get("stage");
   const pm = url.searchParams.get("pm");
@@ -20,7 +22,7 @@ export async function GET(request: Request) {
   const leads = await prisma.lead.findMany({
     where: {
       stage: stage && isStage(stage) ? stage : undefined,
-      assignedPm: pm === "unassigned" ? null : pm && isReadablePm(pm) ? pm : undefined,
+      assignedPm: pm === "unassigned" ? null : pm && isReadablePm(pm, assignees) ? pm : undefined,
       source: source && isLeadSource(source) ? source : undefined,
     },
     include: {

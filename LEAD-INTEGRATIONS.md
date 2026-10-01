@@ -15,12 +15,14 @@ The retired `/api/webhooks` routes remain retired. Do not reconnect Circleback, 
 
 | Path after `/api/intake/` | Key variable | Result |
 | --- | --- | --- |
-| `remodel-favor` | `INTAKE_REMODEL_FAVOR_KEY` | Paid leads only; Raymond → Cody round-robin and immediate review due |
+| `remodel-favor` | `INTAKE_REMODEL_FAVOR_KEY` | Paid leads only; owner-managed pool (Raymond → Cody by default) and immediate review due |
 | `website` | `INTAKE_WEBSITE_KEY` | Unassigned, review due immediately |
 | `roofr-instant-estimator` | `INTAKE_ROOFR_KEY` | Distinct Roofr source, unassigned, review due immediately |
 | `lsa` | `INTAKE_LSA_KEY` | Google LSA source, unassigned, review due immediately |
 
 The receiver fixes the source and routing from the authenticated path. A sender cannot choose a rep, stage, arbitrary source, job ID or financial field. Storm/permit alerts are not accepted as customer leads without qualification and a contact method. Referral and other leads remain available through New lead with manual assignment.
+
+The owner manages the pool at `/routing`. Paused members remain available for manual work; historical assignments are not moved. When everyone is paused, intake still saves the lead and its receipt, leaves it unassigned and schedules immediate review. Replaying that delivery after the pool resumes still returns the original record, without advancing the rotation. A new assignee starts paused and receives no sign-in or invitation. Old unused pool flags do not change the default rotation until the owner explicitly saves a setting. Completing or changing private owner-password setup revokes older owner sessions; use a fresh sign-in before changing routing.
 
 ## JSON version 1
 
@@ -78,4 +80,4 @@ To pause: remove the source from `LEAD_INTAKE_SOURCES` and redeploy. To revoke/r
 
 ## Remaining activation work
 
-Provider account access, active sender workflows, production credential setup and the first genuine end-to-end deliveries must be verified separately. There is no automatic customer messaging, Roofr job creation, Drive sync, staff notification or dynamic staff-roster editor in this release. The round-robin pool is Raymond/Cody; changes still require a reviewed code change. The receiving API and status page are a tested component of the requested multi-source system, not evidence that the entire system is operational.
+Provider account access, active sender workflows, production credential setup and the first genuine end-to-end deliveries must be verified separately. There is no automatic customer messaging, Roofr job creation, Drive sync or staff notification in this release. Lead assignees and paid-lead pool membership are owner-managed; authentication access remains separate. The receiving API, source status and routing controls are components of the requested multi-source system, not evidence that the entire system is operational.

@@ -1,13 +1,14 @@
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-const { auth, events, leads } = vi.hoisted(() => ({ auth: vi.fn(), events: vi.fn(), leads: vi.fn() }));
+const { auth, events, leads, users } = vi.hoisted(() => ({ auth: vi.fn(), events: vi.fn(), leads: vi.fn(), users: vi.fn() }));
 vi.mock("@/auth", () => ({ auth }));
 vi.mock("@/lib/prisma", () => ({ prisma: {
-  webhookEvent: { findMany: events }, lead: { findMany: leads },
+  user: { findMany: users }, roundRobinCursor: { findUnique: async () => null }, webhookEvent: { findMany: events }, lead: { findMany: leads },
 } }));
 import { GET as inbox } from "@/app/api/webhooks/route";
 import { GET as readLeads } from "@/app/api/leads/route";
 
+beforeEach(() => users.mockResolvedValue([]));
 afterEach(() => vi.resetAllMocks());
 
 describe("retired webhook inbox", () => {

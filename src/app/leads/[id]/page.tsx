@@ -15,7 +15,8 @@ import {
 } from "@/components/lead-forms";
 import { Card } from "@/components/ui";
 import { formatDateTime, parseJsonArray } from "@/lib/utils";
-import { isRrPm, pmLabel } from "@/lib/rr";
+import { isAssignablePm, pmLabel } from "@/lib/rr";
+import { getAssignees } from "@/lib/routing-directory";
 import { sourceLabel } from "@/lib/sources";
 import { canOverrideStages } from "@/lib/users";
 import { NextActionForm } from "@/components/next-action-form";
@@ -35,7 +36,7 @@ export default async function LeadDetailPage({
   if (!session?.user) redirect("/login");
   const { id } = await params;
 
-  const lead = await prisma.lead.findUnique({
+  const [assignees, lead] = await Promise.all([getAssignees(), prisma.lead.findUnique({
     where: { id },
     include: {
       activities: { orderBy: { occurredAt: "desc" } },
@@ -43,7 +44,7 @@ export default async function LeadDetailPage({
       assignments: { orderBy: { occurredAt: "desc" } },
       opportunity: true,
     },
-  });
+  })]);
 
   if (!lead) notFound();
 
@@ -76,7 +77,7 @@ export default async function LeadDetailPage({
             <StageBadge stage={lead.stage} />
           </div>
           <p className="mt-2 text-sm text-muted">
-            {sourceLabel(lead.source)} · {pmLabel(lead.assignedPm)} ·{" "}
+            {sourceLabel(lead.source)} · {pmLabel(lead.assignedPm, assignees)} ·{" "}
             {lead.insuranceClaim ? "Insurance claim" : "Retail / other"} · {lead.address ?? "No address"}
           </p>
         </div>
@@ -88,7 +89,7 @@ export default async function LeadDetailPage({
 
       <Card className="mb-5 p-4">
         {isDemoLead(lead) && <p className="mb-3 text-sm text-copper">Demo / test record. Excluded from the Today work queue.</p>}
-        {lead.assignedPm && !isRrPm(lead.assignedPm) && <p className="mb-3 rounded-md bg-amber-50 p-3 text-sm text-amber-900">This record has an inactive owner. Choose Raymond or Cody Boyd and record the reason when reassigning. Past activity is preserved.</p>}
+        {lead.assignedPm && !isAssignablePm(lead.assignedPm, assignees) && <p className="mb-3 rounded-md bg-amber-50 p-3 text-sm text-amber-900">This record has an inactive owner. Choose a current assignee and record the reason when reassigning. Past activity is preserved.</p>}
         <StageForm
           leadId={lead.id}
           stage={lead.stage}
@@ -100,7 +101,7 @@ export default async function LeadDetailPage({
         <div className="space-y-5">
           <Card className="p-4">
             <h2 className="mb-3 font-semibold tracking-tight text-xl">Next action</h2>
-            <NextActionForm key={lead.updatedAt.toISOString()} version={lead.updatedAt.toISOString()} leadId={lead.id}
+            <NextActionForm assignees={assignees} key={lead.updatedAt.toISOString()} version={lead.updatedAt.toISOString()} leadId={lead.id}
               summary={lead.nextActionAt ? lead.activities.find(a => a.type === "next_action")?.summary ?? "" : ""}
               due={easternInput(lead.nextActionAt)} dueIso={lead.nextActionAt?.toISOString() ?? ""} assignedPm={lead.assignedPm} />
           </Card>
@@ -152,9 +153,9 @@ export default async function LeadDetailPage({
         <div className="space-y-5">
           <Card className="p-4">
             <h2 className="font-semibold tracking-tight text-xl">Round-robin</h2>
-            <p className="mt-1 text-sm text-muted">Current: {pmLabel(lead.assignedPm)}</p>
+            <p className="mt-1 text-sm text-muted">Current: {pmLabel(lead.assignedPm, assignees)}</p>
             <div className="mt-3">
-              <AssignPanel leadId={lead.id} assignedPm={lead.assignedPm} source={lead.source} />
+              <AssignPanel assignees={assignees} leadId={lead.id} assignedPm={lead.assignedPm} source={lead.source} />
             </div>
           </Card>
 
@@ -167,7 +168,7 @@ export default async function LeadDetailPage({
                 {lead.assignments.map((event) => (
                   <li key={event.id} className="rounded-md bg-paper px-3 py-2">
                     <p>
-                      {pmLabel(event.fromPm)} → {pmLabel(event.toPm)}
+                      {pmLabel(event.fromPm, assignees)} → {pmLabel(event.toPm, assignees)}
                     </p>
                     <p className="text-xs text-muted">
                       {event.reason} · {event.actor} · {formatDateTime(event.occurredAt)}
@@ -181,14 +182,14 @@ export default async function LeadDetailPage({
           <Card className="p-4">
             <h2 className="font-semibold tracking-tight text-xl">Set appointment</h2>
             <div className="mt-3">
-              <SetAppointmentForm leadId={lead.id} defaultAssignee={lead.assignedPm} />
+              <SetAppointmentForm assignees={assignees} leadId={lead.id} defaultAssignee={lead.assignedPm} />
             </div>
             {lead.appointments.length > 0 ? (
               <ul className="mt-4 space-y-2 text-sm">
                 {lead.appointments.map((appt) => (
                   <li key={appt.id} className="rounded-md border border-line px-3 py-2">
                     <p>
-                      {formatDateTime(appt.startsAt)} · {pmLabel(appt.assignee)} · {appt.status}
+                      {formatDateTime(appt.startsAt)} · {pmLabel(appt.assignee, assignees)} · {appt.status}
                     </p>
                     <p className="text-xs text-muted">
                       Roofr calendar: {appt.roofrCalendarId ?? "not linked"} · display only

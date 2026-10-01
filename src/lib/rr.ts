@@ -1,7 +1,7 @@
 import { InputError } from "@/lib/input-error";
 /**
- * Current routing: Raymond → Cody Boyd. Historical assignments are retained.
- * Chris Bell is explicitly OUT of routing.
+ * Default directory order is Raymond → Cody Boyd. Persisted pool settings are
+ * applied by routing-directory; historical and paused positions remain stable.
  */
 export const RR_POOL = ["raymond", "cody"] as const;
 // A separate cursor avoids interpreting the previous three-person index as a two-person index.
@@ -21,9 +21,27 @@ export function isRrPm(value: string | null | undefined): value is RrPm {
   return !!value && (RR_POOL as readonly string[]).includes(value);
 }
 
-// Read filters include former staff; all assignment paths still require isRrPm.
-export function isReadablePm(value: string | null | undefined): value is RrPm | "austin" {
-  return value === "austin" || isRrPm(value);
+// Read filters include former staff; mutations validate the current directory.
+export type Assignee = { slug: string; name: string; inRrPool: boolean };
+export const DEFAULT_ASSIGNEES: Assignee[] = RR_POOL.map(slug => ({ slug, name: RR_POOL_LABELS[slug], inRrPool: true }));
+
+export function isAssignablePm(value: string | null | undefined, roster: readonly Assignee[]): value is string {
+  return Boolean(value && !RR_EXCLUDED.includes(value as (typeof RR_EXCLUDED)[number]) && roster.some(member => member.slug === value));
+}
+
+export function isReadablePm(value: string | null | undefined, roster: readonly Assignee[] = DEFAULT_ASSIGNEES): value is string {
+  return value === "austin" || isAssignablePm(value, roster);
+}
+
+// Indexes use the full, stable directory: pausing a member never shifts another member's turn.
+export function nextAvailableAssignee(lastIndex: number, roster: readonly Assignee[]) {
+  if (!Number.isInteger(lastIndex)) throw new InputError("lastIndex must be an integer");
+  for (let offset = 1; offset <= roster.length; offset++) {
+    const nextIndex = ((lastIndex + offset) % roster.length + roster.length) % roster.length;
+    const member = roster[nextIndex];
+    if (member.inRrPool && isAssignablePm(member.slug, roster)) return { pm: member.slug, nextIndex };
+  }
+  return null;
 }
 
 export function nextRoundRobin(lastIndex: number): {
@@ -61,10 +79,12 @@ export function assertAssignablePm(slug: string): asserts slug is RrPm {
   }
 }
 
-export function pmLabel(slug: string | null | undefined): string {
+export function pmLabel(slug: string | null | undefined, roster: readonly Assignee[] = DEFAULT_ASSIGNEES): string {
   if (!slug) return "Unassigned";
   if (slug === "austin") return "Austin Maddox (inactive)";
   if (RR_EXCLUDED.includes(slug as (typeof RR_EXCLUDED)[number])) return "Chris Bell";
+  const member = roster.find(member => member.slug === slug);
+  if (member) return member.name;
   if (isRrPm(slug)) return RR_POOL_LABELS[slug];
   return slug;
 }

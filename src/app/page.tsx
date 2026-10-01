@@ -6,7 +6,8 @@ import { AppShell } from "@/components/app-shell";
 import { LeadBoard } from "@/components/lead-board";
 import { isLeadSource, LEAD_SOURCES, SOURCE_LABELS } from "@/lib/sources";
 import { isStage, STAGES, STAGE_LABELS } from "@/lib/stages";
-import { isReadablePm, RR_POOL, RR_POOL_LABELS } from "@/lib/rr";
+import { isReadablePm } from "@/lib/rr";
+import { getAssignees } from "@/lib/routing-directory";
 import { isDemoLead } from "@/lib/demo-data";
 import { matchesLeadSearch } from "@/lib/lead-search";
 
@@ -19,10 +20,10 @@ export default async function BoardPage({
 }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
-  const params = await searchParams;
+  const [params, assignees] = await Promise.all([searchParams, getAssignees()]);
   const view = params.view === "table" ? "table" : "board";
   const stage = params.stage && isStage(params.stage) ? params.stage : undefined;
-  const pm = params.pm === "unassigned" || (params.pm && isReadablePm(params.pm)) ? params.pm : undefined;
+  const pm = params.pm === "unassigned" || (params.pm && isReadablePm(params.pm, assignees)) ? params.pm : undefined;
   const source = params.source && isLeadSource(params.source) ? params.source : undefined;
   const search = typeof params.q === "string" ? params.q.trim().slice(0, 200) : "";
 
@@ -104,9 +105,9 @@ export default async function BoardPage({
           <option value="">All PMs</option>
           <option value="unassigned">Unassigned</option>
           <option value="austin">Austin Maddox — past assignments</option>
-          {RR_POOL.map((value) => (
-            <option key={value} value={value}>
-              {RR_POOL_LABELS[value]}
+          {assignees.map((value) => (
+            <option key={value.slug} value={value.slug}>
+              {value.name}
             </option>
           ))}
         </select>
@@ -125,7 +126,7 @@ export default async function BoardPage({
         </button>
       </form>
 
-      <LeadBoard leads={leads} view={view} query={suffix} />
+      <LeadBoard assignees={assignees} leads={leads} view={view} query={suffix} />
     </AppShell>
   );
 }

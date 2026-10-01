@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { Appointment, Lead, OpportunityLink } from "@prisma/client";
 import { STAGES, STAGE_LABELS, type Stage } from "@/lib/stages";
 import { sourceLabel } from "@/lib/sources";
-import { pmLabel } from "@/lib/rr";
+import { pmLabel, type Assignee } from "@/lib/rr";
 import { StageBadge } from "@/components/stage-badge";
 import { parseJsonArray } from "@/lib/utils";
 
@@ -16,10 +16,12 @@ export function LeadBoard({
   leads,
   view,
   query,
+  assignees,
 }: {
   leads: LeadRow[];
   view: "board" | "table";
   query: string;
+  assignees: Assignee[];
 }) {
   if (leads.length === 0) {
     return (
@@ -65,7 +67,7 @@ export function LeadBoard({
                 <td className="px-3 py-2">
                   <StageBadge stage={lead.stage} />
                 </td>
-                <td className="px-3 py-2">{pmLabel(lead.assignedPm)}</td>
+                <td className="px-3 py-2">{pmLabel(lead.assignedPm, assignees)}</td>
                 <td className="px-3 py-2">{sourceLabel(lead.source)}</td>
                 <td className="px-3 py-2">{parseJsonArray(lead.phones)[0] ?? "—"}</td>
                 <td className="px-3 py-2">{lead.insuranceClaim ? "Claim" : "Retail"}</td>
@@ -101,7 +103,7 @@ export function LeadBoard({
                     <p className="font-medium leading-snug">{lead.name}</p>
                     <p className="mt-1 text-xs text-muted">{lead.zip ?? lead.address ?? "Jacksonville area"}</p>
                     <div className="mt-2 flex items-center justify-between text-[11px] text-muted">
-                      <span>{pmLabel(lead.assignedPm)}</span>
+                      <span>{pmLabel(lead.assignedPm, assignees)}</span>
                       <span>{sourceLabel(lead.source)}</span>
                     </div>
                     {lead.insuranceClaim ? (

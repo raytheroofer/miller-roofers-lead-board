@@ -7,7 +7,8 @@ import { actorFromSession } from "@/lib/session";
 import { assignManual, assignRoundRobin } from "@/lib/assign";
 import { isLeadSource } from "@/lib/sources";
 import { assertTransition, isStage } from "@/lib/stages";
-import { isRrPm } from "@/lib/rr";
+import { isAssignablePm } from "@/lib/rr";
+import { getAssignees } from "@/lib/routing-directory";
 import { canTransition } from "@/lib/stages";
 import { parseEasternInput } from "@/lib/eastern-time";
 import { serialTransaction } from "@/lib/transaction";
@@ -109,8 +110,8 @@ export async function setAppointmentAction(formData: FormData) {
     throw new InputError("Use a current or upcoming confirmed Roofr appointment. Keep historical appointments in Roofr.");
   }
   const assignee = String(formData.get("assignee") ?? "");
-  if (!isRrPm(assignee)) throw new InputError("Choose an assigned PM.");
   await serialTransaction(async tx => {
+    if (!isAssignablePm(assignee, await getAssignees(tx))) throw new InputError("Choose an assigned PM.");
     const lead = await tx.lead.findUniqueOrThrow({ where: { id } });
     const existing = await tx.appointment.findFirst({ where: { leadId: id, roofrCalendarId } });
     const notes = String(formData.get("notes") ?? "") || null;

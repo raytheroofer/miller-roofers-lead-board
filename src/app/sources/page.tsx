@@ -6,6 +6,7 @@ import { Card } from "@/components/ui";
 import { prisma } from "@/lib/prisma";
 import { INTAKE_SOURCE_IDS, INTAKE_SOURCES, intakeConfiguration } from "@/lib/intake-config";
 import { INTAKE_RECEIPT_TYPE } from "@/lib/intake";
+import { getAssignees } from "@/lib/routing-directory";
 import { formatDateTime } from "@/lib/utils";
 
 export const dynamic = "force-dynamic";
@@ -14,26 +15,27 @@ export default async function SourcesPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (session.user.role !== "owner") notFound();
-  const sources = await Promise.all(INTAKE_SOURCE_IDS.map(async source => {
+  const [assignees, sources] = await Promise.all([getAssignees(), Promise.all(INTAKE_SOURCE_IDS.map(async source => {
     const where = { type: INTAKE_RECEIPT_TYPE, actorName: INTAKE_SOURCES[source].label };
     const [count, latest] = await Promise.all([
       prisma.activity.count({ where }),
       prisma.activity.findFirst({ where, orderBy: { createdAt: "desc" }, select: { createdAt: true } }),
     ]);
     return { source, configuration: intakeConfiguration(source), count, latest };
-  }));
+  }))]);
   return <AppShell userName={session.user.name ?? "Owner"} userEmail={session.user.email ?? ""} pathname="/sources">
     <h1 className="text-3xl font-semibold text-navy">Lead sources</h1>
     <p className="mt-2 text-sm text-muted">Owner view · Receipt counts confirm accepted deliveries, not that every provider lead has arrived.</p>
     <div className="my-5 flex flex-wrap gap-3 text-sm">
       <Link className="rounded-md bg-navy px-3 py-2 text-white" href="/?pm=unassigned">Review unassigned leads</Link>
       <Link className="rounded-md border border-line px-3 py-2" href="/today">Review follow-ups</Link>
+      <Link className="rounded-md border border-line px-3 py-2" href="/routing">Manage lead routing</Link>
     </div>
     <div className="grid gap-4 md:grid-cols-2">{sources.map(({ source, configuration, count, latest }) => <Card key={source} className="p-5">
       <h2 className="text-xl font-semibold">{INTAKE_SOURCES[source].label}</h2>
       <p className="mt-2 font-medium">{configuration === "disabled" ? "Off — setup required" : configuration === "needs-setup" ? "Blocked — configuration incomplete" : "Ready to receive — verify provider delivery"}</p>
       <p className="mt-2 text-sm">{count} accepted deliveries · Last received: {latest ? `${formatDateTime(latest.createdAt)} ET` : "None"}</p>
-      <p className="mt-2 text-sm text-muted">{INTAKE_SOURCES[source].routing === "round-robin" ? "Paid leads only. Assigned Raymond → Cody Boyd, with a follow-up due immediately." : "New leads enter the unassigned queue with a review due immediately."}</p>
+      <p className="mt-2 text-sm text-muted">{INTAKE_SOURCES[source].routing === "round-robin" ? (assignees.some(member => member.inRrPool) ? `Paid leads rotate through ${assignees.filter(member => member.inRrPool).map(member => member.name).join(" → ")}, with follow-up due immediately.` : "Paid-lead rotation is paused. Incoming leads are saved in the unassigned review queue.") : "New leads enter the unassigned queue with a review due immediately."}</p>
       <Link href={`/?source=${source}`} className="mt-3 inline-block text-sm underline">View these leads</Link>
     </Card>)}</div>
     <Card className="mt-5 p-5 text-sm">

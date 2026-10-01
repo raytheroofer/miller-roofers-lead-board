@@ -1,11 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-const tx = vi.hoisted(() => ({ lead: { findUnique: vi.fn(), update: vi.fn() },
-  roundRobinCursor: { upsert: vi.fn(), update: vi.fn() }, assignmentEvent: { create: vi.fn() }, activity: { create: vi.fn() } }));
+const tx = vi.hoisted(() => ({ user: { findMany: vi.fn() }, lead: { findUnique: vi.fn(), update: vi.fn() },
+  roundRobinCursor: { findUnique: vi.fn(), upsert: vi.fn(), update: vi.fn() }, assignmentEvent: { create: vi.fn() }, activity: { create: vi.fn() } }));
 vi.mock("@/lib/transaction", () => ({ serialTransaction: (run: (client: typeof tx) => unknown) => run(tx) }));
 import { RR_CURSOR_ID } from "@/lib/rr";
-import { assignRoundRobin, assignManual } from "@/lib/assign";
+import { assignRoundRobin, assignRoundRobinInTransaction, assignManual } from "@/lib/assign";
 
-beforeEach(() => vi.clearAllMocks());
+beforeEach(() => { vi.clearAllMocks(); tx.user.findMany.mockResolvedValue([]); tx.roundRobinCursor.findUnique.mockResolvedValue({ id: "routing-directory-v1" }); });
 describe("routing service", () => {
   it("refuses round-robin on a website lead without advancing the cursor", async () => {
     tx.lead.findUnique.mockResolvedValue({ id: "lead", source: "website", assignedPm: null, stage: "capture" });
@@ -28,5 +28,16 @@ describe("routing service", () => {
   it("requires an explanation for manual routing", async () => {
     await expect(assignManual({ leadId: "lead", toPm: "raymond", actorName: "Owner", reason: "manual_override", reasonNote: " " })).rejects.toThrow(/Explain/);
     expect(tx.lead.findUnique).not.toHaveBeenCalled();
+  });
+  it("queues a paid intake when all members are paused without consuming a turn", async () => {
+    tx.user.findMany.mockResolvedValue(["raymond", "cody"].map(slug => ({ slug, inRrPool: false, updatedAt: new Date(), role: "pm" })));
+    tx.lead.findUnique.mockResolvedValue({ id: "lead", source: "remodel-favor", assignedPm: null, stage: "capture" });
+    expect((await assignRoundRobinInTransaction(tx as never, { leadId: "lead", actorName: "Provider" })).assignedPm).toBeNull();
+    expect(tx.roundRobinCursor.upsert).not.toHaveBeenCalled(); expect(tx.lead.update).not.toHaveBeenCalled();
+    await expect(assignRoundRobin({ leadId: "lead", actorName: "Owner" })).rejects.toThrow(/paused/);
+  });
+  it("rejects a fabricated assignee before changing a lead", async () => {
+    await expect(assignManual({ leadId: "lead", toPm: "rep_forged", actorName: "Owner", reason: "reassign", reasonNote: "Test" })).rejects.toThrow(/directory/);
+    expect(tx.lead.update).not.toHaveBeenCalled();
   });
 });
