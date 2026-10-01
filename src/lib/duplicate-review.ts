@@ -59,7 +59,10 @@ export function duplicatePair(first: DuplicateLead, second: DuplicateLead): Dupl
   if (!matched.length) return null;
   const reasons = [...new Set(matched.map(key => key.startsWith("phone:") ? "Shared phone" : key.startsWith("email:") ? "Shared email" : "Matching address and ZIP"))];
   return { key: hash([a.id, b.id]), first: a, second: b, reasons,
-    fingerprint: hash([a, b].map(lead => [lead.id, words(lead.name), lead.source, contactKeys(lead)])) };
+    // Discovery keys deliberately omit incomplete values. Review freshness must
+    // cover every contact field, including an address that has no ZIP yet.
+    fingerprint: hash([a, b].map(lead => [lead.id, words(lead.name), lead.source,
+      words(lead.phones), words(lead.email ?? ""), words(lead.address ?? ""), words(lead.zip ?? "")])) };
 }
 
 export function findDuplicatePairs(leads: DuplicateLead[], limit = DUPLICATE_PAIR_LIMIT) {

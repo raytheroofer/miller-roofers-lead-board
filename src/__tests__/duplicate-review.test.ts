@@ -83,6 +83,19 @@ describe("duplicate suggestions", () => {
     expect(reviewForPair(pair, [{ ...review, outcome: "reopen" }, review]).decision).toBe("reopen");
     expect(parseDuplicateReview('{"note":"not a review"}')).toBeNull();
   });
+  it.each<Partial<DuplicateLead>>([{ address: "99 Different Street", zip: null }, { zip: "32209" }, { email: "incomplete-address" }])("reopens for changed contact fields omitted from discovery keys: %j", fields => {
+    const changed = duplicatePair({ ...a, ...fields }, b)!;
+    expect(changed.reasons).toEqual(["Shared phone"]);
+    expect(reviewForPair(changed, [review]).decision).toBeNull();
+  });
+  it("tracks incomplete phone edits when email is the matching field", () => {
+    const emailA = { ...a, phones: '["123"]', email: "same@example.invalid" };
+    const emailB = { ...b, phones: "[]", email: "same@example.invalid" };
+    const before = duplicatePair(emailA, emailB)!;
+    const after = duplicatePair({ ...emailA, phones: '["456"]' }, emailB)!;
+    expect(after.reasons).toEqual(["Shared email"]);
+    expect(after.fingerprint).not.toBe(before.fingerprint);
+  });
 });
 
 describe("duplicate review mutations", () => {
