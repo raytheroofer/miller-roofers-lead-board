@@ -9,6 +9,7 @@ export const LEAD_SOURCES = [
   "referral",
   "gbp-review",
   "website",
+  "roofr-instant-estimator",
   "other",
 ] as const;
 
@@ -25,6 +26,7 @@ export const SOURCE_LABELS: Record<LeadSource, string> = {
   referral: "Referral",
   "gbp-review": "GBP / Review",
   website: "Website",
+  "roofr-instant-estimator": "Roofr Instant Estimator",
   other: "Other",
 };
 

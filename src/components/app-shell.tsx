@@ -2,6 +2,7 @@ import Link from "next/link";
 import { signOut } from "@/auth";
 import { featureFlags } from "@/lib/flags";
 import { BrandLogo } from "@/components/brand-logo";
+import { ownerEmail } from "@/lib/users";
 
 const NAV = [
   { href: "/", label: "Board" },
@@ -22,6 +23,7 @@ export function AppShell({
   pathname: string;
 }) {
   const flags = featureFlags();
+  const navigation = userEmail.toLowerCase() === ownerEmail() ? [...NAV, { href: "/sources", label: "Lead sources" }] : NAV;
 
   return (
     <div className="min-h-full">
@@ -35,7 +37,7 @@ export function AppShell({
             </div>
           </Link>
           <nav aria-label="Main navigation" className="hidden items-center gap-1 xl:flex">
-            {NAV.map((item) => (
+            {navigation.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
@@ -71,7 +73,7 @@ export function AppShell({
         </div>
       </header>
       <nav aria-label="Compact navigation" className="flex gap-2 overflow-x-auto border-b border-line bg-card px-4 py-2 xl:hidden">
-        {NAV.map((item) => (
+        {navigation.map((item) => (
           <Link
             key={item.href}
             href={item.href}

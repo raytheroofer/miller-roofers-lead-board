@@ -21,6 +21,8 @@ import { canOverrideStages } from "@/lib/users";
 import { NextActionForm } from "@/components/next-action-form";
 import { easternInput } from "@/lib/eastern-time";
 import { isDemoLead } from "@/lib/demo-data";
+import { isIntakeSource } from "@/lib/intake-config";
+import { safeSourceUrl } from "@/lib/intake-contract";
 
 export const dynamic = "force-dynamic";
 
@@ -117,7 +119,7 @@ export default async function LeadDetailPage({
                       <p className="text-xs text-muted">{formatDateTime(activity.occurredAt)}</p>
                     </div>
                     <p className="text-sm">{activity.summary ?? activity.outcome ?? "Logged"}</p>
-                    {activity.body ? <p className="mt-1 text-sm text-muted">{activity.body}</p> : null}
+                    {activity.type === "source_received" ? <SourceReceipt body={activity.body} /> : activity.body ? <p className="mt-1 text-sm text-muted">{activity.body}</p> : null}
                   </li>
                 ))}
               </ol>
@@ -218,4 +220,18 @@ export default async function LeadDetailPage({
       </div>
     </AppShell>
   );
+}
+
+function SourceReceipt({ body }: { body: string | null }) {
+  let receivedAt: string;
+  let url: string | null;
+  try {
+    const receipt = JSON.parse(body ?? "{}");
+    url = isIntakeSource(receipt.source) && typeof receipt.sourceUrl === "string" ? safeSourceUrl(receipt.source, receipt.sourceUrl) : null;
+    receivedAt = formatDateTime(new Date(receipt.receivedAt));
+  } catch { return null; }
+  return <div className="mt-1 text-sm text-muted">
+    <p>Received by source: {receivedAt} ET</p>
+    {url && <a className="underline" href={url} target="_blank" rel="noopener noreferrer">Open original lead ↗</a>}
+  </div>;
 }

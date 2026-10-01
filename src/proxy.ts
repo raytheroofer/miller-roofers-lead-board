@@ -5,6 +5,7 @@ const PUBLIC_PREFIXES = [
   "/login",
   "/api/auth",
   "/api/webhooks",
+  "/api/intake",
   "/api/health",
   "/api/twilio",
   "/api/roofr",
