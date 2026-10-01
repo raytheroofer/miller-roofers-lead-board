@@ -10,13 +10,24 @@ export default async function StormResearchPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (session.user.role !== "owner") notFound();
-  const [total, flagged, rows] = await Promise.all([
-    prisma.stormObservation.count(),
-    prisma.stormObservation.count({ where: { quarantineReason: { not: null } } }),
-    prisma.stormObservation.findMany({
-      where: { quarantineReason: null }, orderBy: [{ stormDate: "desc" }, { hailIn: "desc" }], take: 50,
-    }),
-  ]);
+  let research;
+  try {
+    research = await Promise.all([
+      prisma.stormObservation.count(),
+      prisma.stormObservation.count({ where: { quarantineReason: { not: null } } }),
+      prisma.stormObservation.findMany({
+        where: { quarantineReason: null }, orderBy: [{ stormDate: "desc" }, { hailIn: "desc" }], take: 50,
+      }),
+    ] as const);
+  } catch {
+    // Preview deployments may point at a database before the migration. Do not
+    // imply an empty import or expose database details to a signed-in visitor.
+    return <AppShell userName={session.user.name ?? "Owner"} userEmail={session.user.email ?? ""} pathname="/storm-research">
+      <h1 className="text-3xl font-semibold text-navy">Zeus storm research</h1>
+      <p className="mt-4 rounded-xl border border-line bg-card p-5">Research storage is unavailable. Verify the database scope and apply the reviewed migration before importing. No observations or leads were changed by this page.</p>
+    </AppShell>;
+  }
+  const [total, flagged, rows] = research;
   return <AppShell userName={session.user.name ?? "Owner"} userEmail={session.user.email ?? ""} pathname="/storm-research">
     <h1 className="text-3xl font-semibold text-navy">Zeus storm research</h1>
     <p className="mt-2 max-w-3xl text-sm text-muted">Owner-only research queue. ZIP/day observations are modeled storm signals, not unique homes, roof measurements, confirmed damage, or customer leads. Nothing here creates outreach or a Roofr job.</p>
