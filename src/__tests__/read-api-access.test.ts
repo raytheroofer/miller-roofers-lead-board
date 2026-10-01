@@ -10,18 +10,14 @@ import { GET as readLeads } from "@/app/api/leads/route";
 
 afterEach(() => vi.resetAllMocks());
 
-describe("webhook inbox authorization", () => {
-  it.each([undefined, { user: { role: "pm" } }, { user: { role: "other" } }])("denies unauthorized readers before fetching payloads: %j", async session => {
+describe("retired webhook inbox", () => {
+  it.each([undefined, { user: { role: "pm" } }, { user: { role: "other" } }, { user: { role: "owner" } }, { user: { role: "firstmate" } }])("exposes no historical payloads to %j", async session => {
     auth.mockResolvedValue(session);
-    expect((await inbox()).status).toBe(session ? 403 : 401);
-    expect(events).not.toHaveBeenCalled();
-  });
-  it.each(["owner", "firstmate"])("keeps %s inbox access", async role => {
-    auth.mockResolvedValue({ user: { role } });
-    events.mockResolvedValue([{ payload: '{"source":"fixture"}', headers: null }]);
     const response = await inbox();
-    expect(response.status).toBe(200);
-    expect(await response.json()).toEqual({ events: [{ payload: { source: "fixture" }, headers: null }] });
+    expect(response.status).toBe(404);
+    expect(await response.json()).toEqual({ error: "Not found" });
+    expect(response.headers.get("cache-control")).toContain("no-store");
+    expect(events).not.toHaveBeenCalled();
   });
 });
 
