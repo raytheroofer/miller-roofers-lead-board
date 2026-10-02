@@ -24,7 +24,7 @@ export function AppShell({
   pathname: string;
 }) {
   const flags = featureFlags();
-  const navigation = userEmail.toLowerCase() === ownerEmail() ? [...NAV, { href: "/sources", label: "Lead sources" }, { href: "/storm-research", label: "Storm research" }, { href: "/routing", label: "Lead routing" }] : NAV;
+  const navigation = userEmail.toLowerCase() === ownerEmail() ? [...NAV, { href: "/sources", label: "Lead sources" }, { href: "/target-markets", label: "Target ZIPs" }, { href: "/storm-research", label: "Storm research" }, { href: "/routing", label: "Lead routing" }] : NAV;
 
   return (
     <div className="min-h-full">

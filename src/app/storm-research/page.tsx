@@ -3,20 +3,23 @@ import { AppShell } from "@/components/app-shell";
 import { ZeusUpload } from "@/components/zeus-upload";
 import { prisma } from "@/lib/prisma";
 import { notFound, redirect } from "next/navigation";
+import Link from "next/link";
+import { primaryMarket, STORM_RESEARCH_ORDER } from "@/lib/marketing-targets";
 
 export const dynamic = "force-dynamic";
 
-export default async function StormResearchPage() {
+export default async function StormResearchPage({ searchParams }: { searchParams: Promise<{ zip?: string }> }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
   if (session.user.role !== "owner") notFound();
+  const market = primaryMarket((await searchParams).zip);
   let research;
   try {
     research = await Promise.all([
       prisma.stormObservation.count(),
       prisma.stormObservation.count({ where: { quarantineReason: { not: null } } }),
       prisma.stormObservation.findMany({
-        where: { quarantineReason: null }, orderBy: [{ stormDate: "desc" }, { hailIn: "desc" }], take: 50,
+        where: { quarantineReason: null, ...(market ? { zip: market.zip } : {}) }, orderBy: STORM_RESEARCH_ORDER, take: 50,
       }),
     ] as const);
   } catch {
@@ -30,6 +33,7 @@ export default async function StormResearchPage() {
   const [total, flagged, rows] = research;
   return <AppShell userName={session.user.name ?? "Owner"} userEmail={session.user.email ?? ""} pathname="/storm-research">
     <h1 className="text-3xl font-semibold text-navy">Zeus storm research</h1>
+    <p className="mt-2 text-sm"><Link href="/target-markets" className="underline">Target ZIPs & weather review</Link>{market && <> · Showing {market.zip} — {market.area} · <Link href="/storm-research" className="underline">Show all areas</Link></>}</p>
     <p className="mt-2 max-w-3xl text-sm text-muted">Owner-only research queue. ZIP/day observations are modeled storm signals, not unique homes, roof measurements, confirmed damage, or customer leads. Nothing here creates outreach or a Roofr job.</p>
     <div className="mt-5 rounded-xl border border-line bg-card p-5">
       <p className="font-semibold">{total.toLocaleString()} saved observations · {flagged.toLocaleString()} flagged ZIPs · 0 customer leads created by this import</p>
@@ -45,7 +49,7 @@ export default async function StormResearchPage() {
           <td className="p-2">{row.homesAffected?.toLocaleString() ?? "Unknown"} (not unique leads)</td>
           <td className="p-2">{row.swathUrl ? <a href={row.swathUrl} target="_blank" rel="noopener noreferrer" className="underline">Open swath</a> : "No link"}</td>
         </tr>)}</tbody></table>
-      {rows.length === 0 && <p className="mt-3 text-sm text-muted">No snapshot imported yet.</p>}
+      {rows.length === 0 && <p className="mt-3 text-sm text-muted">{market ? "No saved observations for this target ZIP." : "No snapshot imported yet."}</p>}
     </div>
     <p className="mt-5 max-w-3xl text-sm">Next step: verify a specific property address, roof evidence, exposure and a real contact or inquiry in its original source. Search the board for duplicates before capturing that property as a lead. Do not promote aggregate counts or quarantined ZIPs.</p>
   </AppShell>;

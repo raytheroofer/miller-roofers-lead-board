@@ -305,7 +305,7 @@ export function OpportunityForm({
   );
 }
 
-export function NewLeadForm({ captureId }: { captureId: string }) {
+export function NewLeadForm({ captureId, defaultZip }: { captureId: string; defaultZip?: string }) {
   return (
     <ActionForm action={createLeadAction} className="grid gap-3 sm:grid-cols-2">
       <input type="hidden" name="captureId" value={captureId} />
@@ -327,7 +327,7 @@ export function NewLeadForm({ captureId }: { captureId: string }) {
       </div>
       <div>
         <Label>ZIP</Label>
-        <Field name="zip" placeholder="32210" />
+        <Field name="zip" defaultValue={defaultZip ?? ""} placeholder="32210" />
       </div>
       <div>
         <Label>Source</Label>

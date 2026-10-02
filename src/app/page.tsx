@@ -10,13 +10,14 @@ import { isReadablePm } from "@/lib/rr";
 import { getAssignees } from "@/lib/routing-directory";
 import { isDemoLead } from "@/lib/demo-data";
 import { matchesLeadSearch } from "@/lib/lead-search";
+import { normalizedZip, PRIMARY_MARKETS } from "@/lib/marketing-targets";
 
 export const dynamic = "force-dynamic";
 
 export default async function BoardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ view?: string; stage?: string; pm?: string; source?: string; records?: string; q?: string }>;
+  searchParams: Promise<{ view?: string; stage?: string; pm?: string; source?: string; records?: string; q?: string; zip?: string }>;
 }) {
   const session = await auth();
   if (!session?.user) redirect("/login");
@@ -26,6 +27,7 @@ export default async function BoardPage({
   const pm = params.pm === "unassigned" || (params.pm && isReadablePm(params.pm, assignees)) ? params.pm : undefined;
   const source = params.source && isLeadSource(params.source) ? params.source : undefined;
   const search = typeof params.q === "string" ? params.q.trim().slice(0, 200) : "";
+  const zip = normalizedZip(params.zip);
 
   const records = await prisma.lead.findMany({
     where: {
@@ -41,7 +43,7 @@ export default async function BoardPage({
   });
 
   const showDemo = params.records === "demo";
-  const population = records.filter(lead => isDemoLead(lead) === showDemo && matchesLeadSearch(lead, search));
+  const population = records.filter(lead => isDemoLead(lead) === showDemo && matchesLeadSearch(lead, search) && (!zip || normalizedZip(lead.zip) === zip));
   const leads = population.filter(lead => !stage || lead.stage === stage);
   const countByStage = Object.fromEntries(STAGES.map(stage => [stage, population.filter(l => l.stage === stage).length]));
 
@@ -51,6 +53,7 @@ export default async function BoardPage({
   if (pm) query.set("pm", pm);
   if (source) query.set("source", source);
   if (search) query.set("q", search);
+  if (zip) query.set("zip", zip);
   if (showDemo) query.set("records", "demo");
   const queryString = query.toString();
   const suffix = queryString ? `?${queryString}` : "";
@@ -119,6 +122,11 @@ export default async function BoardPage({
             </option>
           ))}
         </select>
+        <select aria-label="Filter by target ZIP" name="zip" defaultValue={zip ?? ""} className="rounded-md border border-line px-3 py-2 text-sm">
+          <option value="">All ZIPs</option>
+          {zip && !PRIMARY_MARKETS.some(market => market.zip === zip) && <option value={zip}>{zip}</option>}
+          {PRIMARY_MARKETS.map(market => <option key={market.zip} value={market.zip}>{market.zip} — {market.area}</option>)}
+        </select>
         <input type="hidden" name="view" value={view} />
         {showDemo && <input type="hidden" name="records" value="demo" />}
         <button type="submit" className="rounded-md bg-navy px-3 py-2 text-sm text-white">
@@ -133,7 +141,7 @@ export default async function BoardPage({
 
 function toggleView(
   next: "board" | "table",
-  params: { stage?: string; pm?: string; source?: string; records?: string; q?: string },
+  params: { stage?: string; pm?: string; source?: string; records?: string; q?: string; zip?: string },
 ) {
   const query = new URLSearchParams();
   if (next === "table") query.set("view", "table");
@@ -141,6 +149,8 @@ function toggleView(
   if (params.pm) query.set("pm", params.pm);
   if (params.source) query.set("source", params.source);
   if (params.q) query.set("q", params.q.trim().slice(0, 200));
+  const zip = normalizedZip(params.zip);
+  if (zip) query.set("zip", zip);
   if (params.records === "demo") query.set("records", "demo");
   const text = query.toString();
   return text ? `/?${text}` : "/";

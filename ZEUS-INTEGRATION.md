@@ -1,5 +1,17 @@
 # Zeus research in the Leaderboard
 
+## Owner-selected ZIP territory
+
+The October 2 targeting view at `/target-markets` uses the owner's priorities: **32082, 32081, 32259, 32250, 32034, 32223, 32257**, in that order. The five additional suggestions remain inactive. The photo's home values, roof-age assumptions, budgets and conversion promises are not imported into scoring or advertising settings.
+
+The owner page combines saved, non-quarantined Zeus observations with current official NWS county-alert context for St. Johns (`FLC109`), Duval (`FLC031`) and Nassau (`FLC089`). Weather fetches run in parallel, timeout after six seconds, revalidate every five minutes on visits, reject responses older than fifteen minutes, and show unavailable coverage distinctly from an empty alert result. County alerts are not ZIP/property exposure or damage proof. Test, expired, cancelled, future and unrelated hazards do not become current roofing signals. This is not a background monitor or a live Zeus account connector.
+
+Cards show original event/snapshot dates, preliminary status and real working lead counts by ZIP/source, excluding demo records. They link to exact-ZIP Zeus evidence, exact-ZIP board review and a blank lead form with the ZIP prefilled. No lead is created from a storm row or alert. The private owner CSV endpoint `/api/marketing-targets` exports the seven priorities and geography only; it does not configure provider campaigns or change budgets. Existing leads outside these ZIPs remain accessible in All ZIPs.
+
+Research orders known hail descending with explicit PostgreSQL `NULLS LAST`, then known wind and stable ID ties. This fixes PR 23 `discussion_r4167966698`; unknown hail must not fill the first fifty results ahead of known values.
+
+Official API references: [NWS API](https://www.weather.gov/documentation/services-web-api), [NWS geolocation guide](https://www.weather.gov/media/documentation/docs/NWS_Geolocation.pdf). County-code queries include county- and zone-based alerts; point exposure still requires separate verification against the original geometry/swath. No Zeus credential is used or stored by this feature.
+
 This feature is an owner-only, manual import of the September 12 Zeus ZIP/day snapshot. It stores storm observations in `StormObservation`, separate from `Lead`. It does not create contacts, assign reps, schedule outreach, or write to Roofr. The ZIP/day `homes_affected` number is a vendor estimate, not a count of unique properties or verified damage.
 
 ## Deploy and import
