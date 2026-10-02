@@ -1,8 +1,10 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export function ZeusUpload() {
+  const router = useRouter();
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   return <form className="mt-4 flex flex-wrap items-center gap-3" onSubmit={async event => {
@@ -19,12 +21,12 @@ export function ZeusUpload() {
       const result = await response.json();
       if (!response.ok) { setMessage(result.error ?? "Import unconfirmed. Retry the same file."); return; }
       setMessage(`${result.inserted} saved; ${result.alreadyPresent} already present; ${result.flaggedGeography} flagged. No customer leads created.`);
-      window.location.reload();
+      router.refresh();
     } catch { setMessage("Import unconfirmed. Retry the same file."); }
     finally { setBusy(false); }
   }}>
     <label htmlFor="snapshot" className="text-sm">Import the private Zeus ZIP snapshot JSON</label>
-    <input id="snapshot" name="snapshot" type="file" accept="application/json,.json" required className="text-sm" />
+    <input id="snapshot" name="snapshot" type="file" accept="application/json,.json" required disabled={busy} className="text-sm" />
     <button disabled={busy} className="rounded-md bg-navy px-3 py-2 text-sm text-white disabled:opacity-50">Import research</button>
     <span role="status" className="text-sm">{message}</span>
   </form>;

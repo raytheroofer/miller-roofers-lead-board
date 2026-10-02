@@ -22,6 +22,26 @@ const object = (value: unknown): value is Record<string, unknown> =>
 const numberOrNull = (value: unknown, max: number): number | null =>
   typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= max ? value : null;
 
+function sourceSwathUrl(value: unknown): string | null {
+  if (typeof value !== "string" || value.length > 1000) return null;
+  try {
+    const url = new URL(value);
+    const vendorHost = ["getzeusai.com", "www.getzeusai.com", "api.getzeusai.com"].includes(url.hostname) ||
+      (url.hostname === "zeusportal.nyc3.cdn.digitaloceanspaces.com" && url.pathname.startsWith("/geojson/"));
+    return url.protocol === "https:" && !url.username && !url.password && vendorHost
+      ? url.href : null;
+  } catch { return null; }
+}
+
+/** A changed observation is a correction requiring review, not an unchanged retry. */
+export function sameZeusObservation(left: ZeusObservation, right: ZeusObservation): boolean {
+  const fields = ["id", "sourceEventId", "zip", "county", "city", "hailIn", "windMph",
+    "homesAffected", "confidence", "preliminary", "quarantineReason", "swathUrl"] as const;
+  return fields.every(field => left[field] === right[field]) &&
+    left.stormDate.getTime() === right.stormDate.getTime() &&
+    left.capturedAt.getTime() === right.capturedAt.getTime();
+}
+
 /** Parse one known Zeus ZIP/day snapshot. These are observations, never property leads. */
 export function parseZeusSnapshot(input: unknown): ZeusObservation[] {
   if (!object(input) || !Array.isArray(input.results) ||
@@ -29,7 +49,8 @@ export function parseZeusSnapshot(input: unknown): ZeusObservation[] {
       input.count !== input.results.length ||
       input.model_version !== "zeus-zip-rollup-v1" ||
       input.data_source !== "verisk_radar_modeled" ||
-      typeof input.generated_at !== "string") {
+      typeof input.generated_at !== "string" ||
+      !/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d{1,9})?(?:Z|[+-]\d{2}:\d{2})$/.test(input.generated_at)) {
     throw new Error("Invalid Zeus snapshot envelope");
   }
   const capturedAt = new Date(input.generated_at);
@@ -46,12 +67,13 @@ export function parseZeusSnapshot(input: unknown): ZeusObservation[] {
     }
     const stormDate = new Date(`${row.storm_date}T00:00:00Z`);
     if (!Number.isFinite(stormDate.getTime()) || stormDate.toISOString().slice(0, 10) !== row.storm_date ||
-        row.county.length > 100 || row.city.length > 100) throw new Error("Invalid geography or date");
+        row.county.length > 100 || row.city.length > 100 ||
+        !row.county.trim() || !row.city.trim() || /[\u0000-\u001f\u007f]/.test(row.county + row.city) ||
+        row.event_id.slice(3, 11) !== row.storm_date.replaceAll("-", "") ||
+        stormDate.getTime() > capturedAt.getTime()) throw new Error("Invalid geography or date");
     const key = `${row.event_id}:${row.zip}`;
     if (seen.has(key)) throw new Error("Duplicate Zeus observation");
     seen.add(key);
-    const url = typeof row.swath_url === "string" ? row.swath_url : null;
-    const swathUrl = url && /^https:\/\//.test(url) && url.length <= 1000 ? url : null;
     return {
       id: `zeus_${createHash("sha256").update(key).digest("hex")}`,
       sourceEventId: row.event_id,
@@ -64,9 +86,10 @@ export function parseZeusSnapshot(input: unknown): ZeusObservation[] {
       homesAffected: typeof row.homes_affected === "number" && Number.isInteger(row.homes_affected)
         ? numberOrNull(row.homes_affected, 10000000) : null,
       confidence: numberOrNull(row.confidence, 1),
-      preliminary: row.preliminary === true,
+      // Missing or malformed vendor status must never imply finalized evidence.
+      preliminary: row.preliminary !== false,
       quarantineReason: /^3[234]\d{3}$/.test(row.zip) ? null : "Suspect Florida ZIP; verify geography",
-      swathUrl,
+      swathUrl: sourceSwathUrl(row.swath_url),
       capturedAt,
     };
   });
