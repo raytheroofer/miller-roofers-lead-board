@@ -47,3 +47,16 @@ it("accepts Facebook through its own authenticated source without accepting raw 
   expect(capture).toHaveBeenCalledWith("fb-lead", expect.objectContaining({ recordId: fixture.recordId }));
   expect(await result.json()).toEqual({ leadId: "facebook_1", disposition: "created", assignedPm: null });
 });
+
+it("accepts attributed ChatGPT inquiries with its own credential and rejects website credentials", async () => {
+  vi.stubEnv("LEAD_INTAKE_SOURCES", "website,chatgpt-ads");
+  vi.stubEnv("INTAKE_CHATGPT_ADS_KEY", "f".repeat(64));
+  expect((await POST(request(), ctx("chatgpt-ads"))).status).toBe(401);
+  expect(capture).not.toHaveBeenCalled();
+  capture.mockResolvedValueOnce({ leadId: "chatgpt_1", disposition: "created", assignedPm: null });
+  const result = await POST(request(fixture, "f".repeat(64)), ctx("chatgpt-ads"));
+  expect(result.status).toBe(201);
+  expect(capture).toHaveBeenCalledWith("chatgpt-ads", expect.objectContaining({ recordId: fixture.recordId }));
+  capture.mockResolvedValueOnce({ leadId: "chatgpt_1", disposition: "duplicate", assignedPm: null });
+  expect((await POST(request(fixture, "f".repeat(64)), ctx("chatgpt-ads"))).status).toBe(200);
+});

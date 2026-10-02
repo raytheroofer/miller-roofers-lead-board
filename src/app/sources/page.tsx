@@ -33,6 +33,7 @@ export default async function SourcesPage() {
     </div>
     <div className="grid gap-4 md:grid-cols-2">{sources.map(({ source, configuration, count, latest }) => <Card key={source} className="p-5">
       <h2 className="text-xl font-semibold">{INTAKE_SOURCES[source].label}</h2>
+      {source === "chatgpt-ads" && <p className="mt-2 text-sm text-muted">Capture roofing inquiries submitted on the company website after a ChatGPT ad click. Ad clicks alone are not leads. Account approval, campaign launch and website delivery must each be verified.</p>}
       <p className="mt-2 font-medium">{configuration === "disabled" ? "Off — setup required" : configuration === "needs-setup" ? "Blocked — configuration incomplete" : "Ready to receive — verify provider delivery"}</p>
       <p className="mt-2 text-sm">{count} accepted deliveries · Last received: {latest ? `${formatDateTime(latest.createdAt)} ET` : "None"}</p>
       <p className="mt-2 text-sm text-muted">{INTAKE_SOURCES[source].routing === "round-robin" ? (assignees.some(member => member.inRrPool) ? `Paid leads rotate through ${assignees.filter(member => member.inRrPool).map(member => member.name).join(" → ")}, with follow-up due immediately.` : "Paid-lead rotation is paused. Incoming leads are saved in the unassigned review queue.") : "New leads enter the unassigned queue with a review due immediately."}</p>
