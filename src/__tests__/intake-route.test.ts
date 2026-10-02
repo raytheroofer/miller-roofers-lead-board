@@ -36,3 +36,14 @@ it("rejects raw envelopes before persistence and sanitizes database errors", asy
   const failed = await POST(request(), ctx()); expect(failed.status).toBe(503);
   expect(await failed.text()).not.toContain("PRIVATE SENTINEL");
 });
+it("accepts Facebook through its own authenticated source without accepting raw Meta envelopes", async () => {
+  vi.stubEnv("LEAD_INTAKE_SOURCES", "website,fb-lead"); vi.stubEnv("INTAKE_FACEBOOK_KEY", "e".repeat(64));
+  expect((await POST(request(fixture), ctx("fb-lead"))).status).toBe(401);
+  expect((await POST(request({ ...fixture, field_data: [] }, "e".repeat(64)), ctx("fb-lead"))).status).toBe(422);
+  expect(capture).not.toHaveBeenCalled();
+  capture.mockResolvedValueOnce({ leadId: "facebook_1", disposition: "created", assignedPm: null });
+  const result = await POST(request(fixture, "e".repeat(64)), ctx("fb-lead"));
+  expect(result.status).toBe(201);
+  expect(capture).toHaveBeenCalledWith("fb-lead", expect.objectContaining({ recordId: fixture.recordId }));
+  expect(await result.json()).toEqual({ leadId: "facebook_1", disposition: "created", assignedPm: null });
+});

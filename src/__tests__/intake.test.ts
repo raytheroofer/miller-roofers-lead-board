@@ -33,9 +33,21 @@ describe("provider credentials", () => {
   });
   it("blocks every source when the owner password is shared with Cody", () => {
     configure(); vi.stubEnv("CODY_PASSWORD", "isolated-owner-credential");
-    vi.stubEnv("LEAD_INTAKE_SOURCES", "website,remodel-favor,lsa,roofr-instant-estimator");
+    vi.stubEnv("LEAD_INTAKE_SOURCES", "website,remodel-favor,lsa,roofr-instant-estimator,fb-lead");
     vi.stubEnv("INTAKE_LSA_KEY", "c".repeat(64)); vi.stubEnv("INTAKE_ROOFR_KEY", "d".repeat(64));
-    for (const source of ["website", "remodel-favor", "lsa", "roofr-instant-estimator"] as const) expect(intakeConfiguration(source)).toBe("needs-setup");
+    vi.stubEnv("INTAKE_FACEBOOK_KEY", "e".repeat(64));
+    for (const source of ["website", "remodel-favor", "lsa", "roofr-instant-estimator", "fb-lead"] as const) expect(intakeConfiguration(source)).toBe("needs-setup");
+  });
+  it("keeps Facebook off until explicitly enabled and isolates its key from website intake", () => {
+    configure(); vi.stubEnv("INTAKE_FACEBOOK_KEY", "e".repeat(64));
+    expect(intakeConfiguration("fb-lead")).toBe("disabled");
+    vi.stubEnv("LEAD_INTAKE_SOURCES", "website,fb-lead");
+    expect(authorizedIntake("fb-lead", `Bearer ${"e".repeat(64)}`)).toBe(true);
+    expect(authorizedIntake("fb-lead", `Bearer ${"a".repeat(64)}`)).toBe(false);
+    expect(authorizedIntake("website", `Bearer ${"e".repeat(64)}`)).toBe(false);
+    vi.stubEnv("INTAKE_FACEBOOK_KEY", "a".repeat(64));
+    expect(intakeConfiguration("fb-lead")).toBe("needs-setup");
+    expect(intakeConfiguration("website")).toBe("needs-setup");
   });
 });
 describe("lead-only contract", () => {
