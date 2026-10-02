@@ -114,3 +114,25 @@ model WebhookEvent {
   receivedAt DateTime @default(now())
   note       String   @default("stored_only")
 }
+
+/// Zeus ZIP/day modeled storm observations. Separate from customer Lead records.
+model StormObservation {
+  id               String   @id
+  sourceEventId    String
+  zip              String
+  county           String
+  city             String
+  stormDate        DateTime
+  hailIn           Float?
+  windMph          Float?
+  homesAffected    Int?
+  confidence       Float?
+  preliminary      Boolean
+  quarantineReason String?
+  swathUrl         String?
+  capturedAt       DateTime
+  createdAt        DateTime @default(now())
+
+  @@index([stormDate, zip])
+  @@index([quarantineReason])
+}
