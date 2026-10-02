@@ -1,6 +1,6 @@
 # Restricted lead intake
 
-This implementation provides the receiving side for four sources. Deploying it does **not** create a provider workflow or prove that a feed works. Each source defaults off. `/sources` is an owner-only status page with accepted delivery counts and last-received time. It never displays secrets, request headers or raw envelopes.
+This implementation provides the receiving side for five sources. Deploying it does **not** create a provider workflow or prove that a feed works. Each source defaults off. `/sources` is an owner-only status page with accepted delivery counts and last-received time. It never displays secrets, request headers or raw envelopes.
 
 The retired `/api/webhooks` routes remain retired. Do not reconnect Circleback, Drive, entire email messages or meeting transcripts to them. This app does not require Google Drive access.
 
@@ -19,6 +19,7 @@ The retired `/api/webhooks` routes remain retired. Do not reconnect Circleback, 
 | `website` | `INTAKE_WEBSITE_KEY` | Unassigned, review due immediately |
 | `roofr-instant-estimator` | `INTAKE_ROOFR_KEY` | Distinct Roofr source, unassigned, review due immediately |
 | `lsa` | `INTAKE_LSA_KEY` | Google LSA source, unassigned, review due immediately |
+| `fb-lead` | `INTAKE_FACEBOOK_KEY` | Facebook Lead source, unassigned, review due immediately |
 
 The receiver fixes the source and routing from the authenticated path. A sender cannot choose a rep, stage, arbitrary source, job ID or financial field. Storm/permit alerts are not accepted as customer leads without qualification and a contact method. Referral and other leads remain available through New lead with manual assignment.
 
@@ -83,3 +84,10 @@ To pause: remove the source from `LEAD_INTAKE_SOURCES` and redeploy. To revoke/r
 Provider account access, active sender workflows, production credential setup and the first genuine end-to-end deliveries must be verified separately. There is no automatic customer messaging, Roofr job creation, Drive sync or staff notification in this release. Lead assignees and paid-lead pool membership are owner-managed; authentication access remains separate. The receiving API, source status and routing controls are components of the requested multi-source system, not evidence that the entire system is operational.
 
 Use Duplicate review before contacting an inquiry that may have arrived through multiple sources. It suggests shared phone/email or matching address-and-ZIP pairs and saves staff decisions with a reason. It does not merge or remove provider deliveries, change assignments or consume a rotation turn. The immutable per-source delivery receipt remains authoritative for retries. Related records still require a coordinated next action; a review decision does not complete or cancel their existing follow-ups. The UI states matching limits and warns if its 5,000-pair bound is reached.
+
+
+## Facebook activation boundary
+
+Use a separately scoped Facebook sender for the MRS Page and explicitly selected lead forms. Map the stable Meta lead ID, original creation timestamp, name and selected contact fields into the same lead-only contract. Omit raw field_data, form questions, disclaimers, attachments, Page tokens and ad data. Keep consent evidence in Meta. The receiver does not accept Meta webhook envelopes directly, retrieve leads from Meta, subscribe the Page or authorize outreach.
+
+Facebook defaults off and requires its own INTAKE_FACEBOOK_KEY, private owner setup and explicit fb-lead enablement. It never uses the paid Remodel Favor rotation. Verify a real provider SYSTEM CHECK delivery, unchanged replay and first genuine lead before declaring the integration live. A working Facebook Page connection does not prove leads_retrieval or a functioning sender.
