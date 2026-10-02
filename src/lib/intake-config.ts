@@ -7,6 +7,7 @@ export const INTAKE_SOURCES = {
   "roofr-instant-estimator": { label: "Roofr Instant Estimator", keyEnv: "INTAKE_ROOFR_KEY", source: "roofr-instant-estimator", routing: "manual" },
   lsa: { label: "Google LSA", keyEnv: "INTAKE_LSA_KEY", source: "lsa", routing: "manual" },
   "fb-lead": { label: "Facebook Lead", keyEnv: "INTAKE_FACEBOOK_KEY", source: "fb-lead", routing: "manual" },
+  "chatgpt-ads": { label: "ChatGPT Ads Manager", keyEnv: "INTAKE_CHATGPT_ADS_KEY", source: "chatgpt-ads", routing: "manual" },
 } as const;
 export type IntakeSource = keyof typeof INTAKE_SOURCES;
 export const INTAKE_SOURCE_IDS = Object.keys(INTAKE_SOURCES) as IntakeSource[];

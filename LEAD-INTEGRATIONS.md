@@ -1,6 +1,6 @@
 # Restricted lead intake
 
-This implementation provides the receiving side for five sources. Deploying it does **not** create a provider workflow or prove that a feed works. Each source defaults off. `/sources` is an owner-only status page with accepted delivery counts and last-received time. It never displays secrets, request headers or raw envelopes.
+This implementation provides the receiving side for six sources. Deploying it does **not** create a provider workflow or prove that a feed works. Each source defaults off. `/sources` is an owner-only status page with accepted delivery counts and last-received time. It never displays secrets, request headers or raw envelopes.
 
 The retired `/api/webhooks` routes remain retired. Do not reconnect Circleback, Drive, entire email messages or meeting transcripts to them. This app does not require Google Drive access.
 
@@ -20,6 +20,7 @@ The retired `/api/webhooks` routes remain retired. Do not reconnect Circleback, 
 | `roofr-instant-estimator` | `INTAKE_ROOFR_KEY` | Distinct Roofr source, unassigned, review due immediately |
 | `lsa` | `INTAKE_LSA_KEY` | Google LSA source, unassigned, review due immediately |
 | `fb-lead` | `INTAKE_FACEBOOK_KEY` | Facebook Lead source, unassigned, review due immediately |
+| `chatgpt-ads` | `INTAKE_CHATGPT_ADS_KEY` | ChatGPT Ads Manager source, unassigned, review due immediately |
 
 The receiver fixes the source and routing from the authenticated path. A sender cannot choose a rep, stage, arbitrary source, job ID or financial field. Storm/permit alerts are not accepted as customer leads without qualification and a contact method. Referral and other leads remain available through New lead with manual assignment.
 
@@ -91,3 +92,37 @@ Use Duplicate review before contacting an inquiry that may have arrived through 
 Use a separately scoped Facebook sender for the MRS Page and explicitly selected lead forms. Map the stable Meta lead ID, original creation timestamp, name and selected contact fields into the same lead-only contract. Omit raw field_data, form questions, disclaimers, attachments, Page tokens and ad data. Keep consent evidence in Meta. The receiver does not accept Meta webhook envelopes directly, retrieve leads from Meta, subscribe the Page or authorize outreach.
 
 Facebook defaults off and requires its own INTAKE_FACEBOOK_KEY, private owner setup and explicit fb-lead enablement. It never uses the paid Remodel Favor rotation. Verify a real provider SYSTEM CHECK delivery, unchanged replay and first genuine lead before declaring the integration live. A working Facebook Page connection does not prove leads_retrieval or a functioning sender.
+
+
+## ChatGPT Ads Manager funnel
+
+Path: ChatGPT ad → MRS public website contact form → trusted website sender →
+`POST /api/intake/chatgpt-ads` → Leadboard review and follow-up → qualified Roofr opportunity.
+Use the existing MRS website and existing Leadboard. Do not send ad visitors to the private board login.
+
+The new receiver and source label are implemented. Account creation, an approved creative,
+budget, ad launch, the Hostinger form sender, production secrets and a live delivery remain
+separate activation steps. This receiver is not an Ads Manager webhook subscription and does
+not read ChatGPT conversations, import clicks as leads, send messages, or report conversions.
+
+Use `utm_source=chatgpt`, `utm_medium=paid`, and a campaign-specific `utm_campaign`
+on the approved public landing page. Preserve attribution with the submitted form in the
+website's own lead record. The trusted sender must select exactly one intake source from
+that recorded attribution; do not also deliver the same submission through `/api/intake/website`.
+Use the stable website form submission ID and original submission timestamp for every retry.
+A query parameter indicates campaign attribution only; it is not identity, consent, or proof
+of a billable click. Keep campaign IDs, full URLs, click tokens and consent evidence in the
+website/advertising system, outside the restricted lead payload.
+
+Map only schemaVersion, recordId, name, receivedAt, phone, phoneExtension, email, address,
+zip and a short roofing request. Omit sourceUrl, raw ad payloads, browser history and
+conversation text. Existing validation and 8 KB limit apply. Store the unique
+`INTAKE_CHATGPT_ADS_KEY` only in the website sender's secret store and the board's server
+environment. Leave `LEAD_INTAKE_SOURCES` unchanged until the sender is configured and tested.
+
+Activation acceptance: create one `SYSTEM CHECK — ChatGPT Ads` form submission, verify
+its source and immediate unassigned review in the board, replay unchanged and verify the
+same lead/one receipt/one action, reject a website credential on the ChatGPT route, and
+reconcile the first genuine inquiry with its saved form record. Confirm separate website
+submissions still use the website route. Do not claim live lead generation until the ad
+account/campaign and that complete path are verified.

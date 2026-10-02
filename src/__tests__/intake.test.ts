@@ -50,6 +50,26 @@ describe("provider credentials", () => {
     expect(intakeConfiguration("website")).toBe("needs-setup");
   });
 });
+describe("ChatGPT Ads intake", () => {
+  it("requires explicit enablement and a distinct source credential", () => {
+    configure(); vi.stubEnv("INTAKE_CHATGPT_ADS_KEY", "f".repeat(64));
+    expect(intakeConfiguration("chatgpt-ads")).toBe("disabled");
+    vi.stubEnv("LEAD_INTAKE_SOURCES", "website,chatgpt-ads");
+    expect(authorizedIntake("chatgpt-ads", `Bearer ${"f".repeat(64)}`)).toBe(true);
+    expect(authorizedIntake("chatgpt-ads", `Bearer ${"a".repeat(64)}`)).toBe(false);
+    expect(authorizedIntake("website", `Bearer ${"f".repeat(64)}`)).toBe(false);
+    vi.stubEnv("INTAKE_CHATGPT_ADS_KEY", "a".repeat(64));
+    expect(intakeConfiguration("chatgpt-ads")).toBe("needs-setup");
+    expect(intakeConfiguration("website")).toBe("needs-setup");
+  });
+  it("requires an actual inquiry and rejects ad or conversation envelopes", () => {
+    expect(parseIntakeLead(fixture, "chatgpt-ads").phone).toBe("+19045550100");
+    expect(() => parseIntakeLead({ ...fixture, phone: null }, "chatgpt-ads")).toThrow();
+    for (const extra of [{ conversation: "private" }, { click_id: "click-1" }, { sourceUrl: "https://chatgpt.com/c/private" }]) {
+      expect(() => parseIntakeLead({ ...fixture, ...extra }, "chatgpt-ads")).toThrow();
+    }
+  });
+});
 describe("lead-only contract", () => {
   it("normalizes equivalent phone/email/timestamp inputs", () => {
     const a = parseIntakeLead({ ...fixture, email: " TEST@EXAMPLE.INVALID ", receivedAt: "2026-09-22T17:41:00-04:00" }, "website");
